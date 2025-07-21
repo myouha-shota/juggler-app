@@ -64,36 +64,50 @@
       const g = parseInt(document.getElementById("games").value);
       const bb = parseInt(document.getElementById("bb").value);
       const rb = parseInt(document.getElementById("rb").value);
-      const grape = parseInt(document.getElementById("grape").value);
+      const grapeInput = document.getElementById("grape").value;
+      const grape = grapeInput === "" ? null : parseInt(grapeInput);
       const gassan = bb + rb;
 
       const result = [];
       const m = data[machine];
 
-      // 動的重み設定
-      let rbWeight, gassanWeight;
-      if (g <= 1000) {
-        rbWeight = 0.30;
-        gassanWeight = 0.50;
-      } else if (g >= 2500) {
+      // 重み設定
+      let rbWeight, gassanWeight, grapeWeight, bbWeight;
+      const grapeValid = grape !== null && grape > 0;
+
+      if (!grapeValid) {
+        // ブドウ無視モード
         rbWeight = 0.55;
-        gassanWeight = 0.25;
+        gassanWeight = 0.40;
+        grapeWeight = 0;
+        bbWeight = 0.05;
       } else {
-        const ratio = (g - 1000) / 1500; // 0〜1の間で変化
-        rbWeight = 0.30 + 0.25 * ratio;
-        gassanWeight = 0.50 - 0.25 * ratio;
+        if (g <= 1000) {
+          rbWeight = 0.30;
+          gassanWeight = 0.50;
+        } else if (g >= 2500) {
+          rbWeight = 0.55;
+          gassanWeight = 0.25;
+        } else {
+          const ratio = (g - 1000) / 1500;
+          rbWeight = 0.30 + 0.25 * ratio;
+          gassanWeight = 0.50 - 0.25 * ratio;
+        }
+        grapeWeight = 0.15;
+        bbWeight = 0.05;
       }
+
       const weights = {
-        bb: 0.05,
+        bb: bbWeight,
         rb: rbWeight,
-        grape: 0.15,
+        grape: grapeWeight,
         gassan: gassanWeight
       };
 
       for (let i = 0; i < m.setting.length; i++) {
         const bbZ = zScore(bb, m.bbProb[i], g);
         const rbZ = zScore(rb, m.rbProb[i], g);
-        const grapeZ = zScore(grape, m.grapeProb[i], g);
+        const grapeZ = grapeValid ? zScore(grape, m.grapeProb[i], g) : 0;
         const gassanProb = 1 / ((1 / m.bbProb[i]) + (1 / m.rbProb[i]));
         const gassanZ = zScore(gassan, gassanProb, g);
 
@@ -104,7 +118,7 @@
           setting: m.setting[i],
           bbZ: bbZ.toFixed(2),
           rbZ: rbZ.toFixed(2),
-          grapeZ: grapeZ.toFixed(2),
+          grapeZ: grapeValid ? grapeZ.toFixed(2) : "-",
           gassanZ: gassanZ.toFixed(2),
           weight
         });
