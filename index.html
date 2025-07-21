@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ジャグラー設定推測アプリ</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    label, select, input { display: block; margin: 10px 0; }
+    .result { margin-top: 20px; }
+    .result-table td { padding: 4px 8px; }
+  </style>
+</head>
+<body>
+  <h1>ジャグラー設定推測アプリ</h1>
+  <label>機種選択:
+    <select id="machine">
+      <option value="myjugg5">マイジャグラーV</option>
+    </select>
+  </label>
+  <label>回転数: <input type="number" id="games" /></label>
+  <label>BB回数: <input type="number" id="bb" /></label>
+  <label>RB回数: <input type="number" id="rb" /></label>
+  <label>ブドウ回数: <input type="number" id="grape" /></label>
+  <button onclick="calculate()">計算</button>
+
+  <div class="result" id="output"></div>
+
+  <script>
+    const data = {
+      myjugg5: {
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [273.1, 270.8, 266.4, 259.0, 255.0, 239.0],
+        rbProb: [409.6, 364.1, 318.9, 283.7, 255.0, 203.4],
+        grapeProb: [5.90, 5.85, 5.80, 5.78, 5.76, 5.66]
+      }
+    };
+
+    function zScore(observed, expected, total) {
+      const p = 1 / expected;
+      const mean = total * p;
+      const sd = Math.sqrt(total * p * (1 - p));
+      return (observed - mean) / sd;
+    }
+
+    function erf(x) {
+      const sign = Math.sign(x);
+      x = Math.abs(x);
+      const t = 1 / (1 + 0.5 * x);
+      const tau = t * Math.exp(-x * x - 1.26551223 + t * (
+        1.00002368 + t * (
+          0.37409196 + t * (
+            0.09678418 + t * (
+              -0.18628806 + t * (
+                0.27886807 + t * (
+                  -1.13520398 + t * (
+                    1.48851587 + t * (
+                      -0.82215223 + t * 0.17087277)))))))));
+      return sign * (1 - tau);
+    }
+
+    function calculate() {
+      const machine = document.getElementById("machine").value;
+      const g = parseInt(document.getElementById("games").value);
+      const bb = parseInt(document.getElementById("bb").value);
+      const rb = parseInt(document.getElementById("rb").value);
+      const grape = parseInt(document.getElementById("grape").value);
+      const gassan = bb + rb;
+
+      const result = [];
+      const m = data[machine];
+
+      // 動的重み設定
+      let rbWeight, gassanWeight;
+      if (g <= 1000) {
+        rbWeight = 0.30;
+        gassanWeight = 0.50;
+      } else if (g >= 2500) {
+        rbWeight = 0.55;
+        gassanWeight = 0.25;
+      } else {
+        const ratio = (g - 1000) / 1500; // 0〜1の間で変化
+        rbWeight = 0.30 + 0.25 * ratio;
+        gassanWeight = 0.50 - 0.25 * ratio;
+      }
+      const weights = {
+        bb: 0.05,
+        rb: rbWeight,
+        grape: 0.15,
+        gassan: gassanWeight
+      };
+
+      for (let i = 0; i < m.setting.length; i++) {
+        const bbZ = zScore(bb, m.bbProb[i], g);
+        const rbZ = zScore(rb, m.rbProb[i], g);
+        const grapeZ = zScore(grape, m.grapeProb[i], g);
+        const gassanProb = 1 / ((1 / m.bbProb[i]) + (1 / m.rbProb[i]));
+        const gassanZ = zScore(gassan, gassanProb, g);
+
+        const weightedSum = weights.bb * bbZ**2 + weights.rb * rbZ**2 + weights.grape * grapeZ**2 + weights.gassan * gassanZ**2;
+        const weight = Math.exp(-weightedSum);
+
+        result.push({
+          setting: m.setting[i],
+          bbZ: bbZ.toFixed(2),
+          rbZ: rbZ.toFixed(2),
+          grapeZ: grapeZ.toFixed(2),
+          gassanZ: gassanZ.toFixed(2),
+          weight
+        });
+      }
+
+      const totalWeight = result.reduce((sum, r) => sum + r.weight, 0);
+      result.forEach(r => r.percentage = ((r.weight / totalWeight) * 100).toFixed(1));
+
+      let html = '<table class="result-table" border="1"><tr><th>設定</th><th>BB Z</th><th>RB Z</th><th>ブドウ Z</th><th>合算 Z</th><th>推定確率</th></tr>';
+      result.forEach(r => {
+        html += `<tr><td>${r.setting}</td><td>${r.bbZ}</td><td>${r.rbZ}</td><td>${r.grapeZ}</td><td>${r.gassanZ}</td><td>${r.percentage}%</td></tr>`;
+      });
+      html += '</table>';
+
+      document.getElementById("output").innerHTML = html;
+    }
+  </script>
+</body>
+</html>
