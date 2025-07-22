@@ -15,13 +15,19 @@
   <h1>ジャグラー設定推測アプリ</h1>
   <label>機種選択:
     <select id="machine">
-      <option value="myjugg5">マイジャグラーV</option>
+    <option value="myjugg5">マイジャグラーV</option>
+    <option value="gojugg3">ゴーゴージャグラー3</option>
+    <option value="happy">ハッピージャグラーVIII</option>
+    <option value="mister">ミスタージャグラー</option>
+    <option value="ulmira">ウルトラミラクルジャグラー</option>
+    <option value="aim">アイムジャグラーEX</option>
+    <option value="girls">ジャグラーガールズSS</option>
     </select>
   </label>
-  <label>回転数: <input type="number" id="games" /></label>
-  <label>BB回数: <input type="number" id="bb" /></label>
-  <label>RB回数: <input type="number" id="rb" /></label>
-  <label>ブドウ回数: <input type="number" id="grape" /></label>
+  <label>回転数: <input type="number" id="games" inputmode="numeric" pattern="[0-9]*" /></label>
+  <label>BB回数: <input type="number" id="bb" inputmode="numeric" pattern="[0-9]*" /></label>
+  <label>RB回数: <input type="number" id="rb" inputmode="numeric" pattern="[0-9]*" /></label>
+  <label>ブドウ回数: <input type="number" id="grape" inputmode="numeric" pattern="[0-9]*" /></label>
   <button onclick="calculate()">計算</button>
 
   <div class="result" id="output"></div>
@@ -33,7 +39,43 @@
         bbProb: [273.1, 270.8, 266.4, 259.0, 255.0, 239.0],
         rbProb: [409.6, 364.1, 318.9, 283.7, 255.0, 203.4],
         grapeProb: [5.90, 5.85, 5.80, 5.78, 5.76, 5.66]
-      }
+      },
+      gojugg3: {
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [259.0, 258.0, 257.0, 254.0, 247.3, 234.9],
+        rbProb: [354.2, 332.7, 306.2, 268.6, 247.3, 234.9],
+        grapeProb: [6.25, 6.20, 6.15, 6.07, 5.99, 5.92]
+      },
+      happy: {
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [273.1, 270.8, 263.2, 254.0, 239.2, 226.0],
+        rbProb: [397.2, 362.1, 332.7, 300.6, 273.1, 256.0],
+        grapeProb: [6.04, 6.01, 5.98, 5.84, 5.81, 5.79]
+      },
+      mister: {
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [268.5, 267.5, 260.0, 249.2, 240.9, 237.4],
+        rbProb: [374.5, 354.2, 330.9, 291.2, 257.0, 237.4],
+        grapeProb: [6.21, 6.16, 6.12, 6.08, 6.05, 6.01]
+      },
+      ulmira: {
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [267.5, 261.1, 256.0, 242.7, 233.2, 216.3],
+        rbProb: [425.6, 402.1, 350.5, 322.8, 297.9, 277.7],
+        grapeProb: [5.93, 5.93, 5.93, 5.93, 5.87, 5.81]
+      },
+      aim: {
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [273.1, 269.7, 269.7, 259.0, 259.0, 255.0],
+        rbProb: [439.8, 399.0, 331.0, 315.1, 255.0, 255.0],
+        grapeProb: [6.02, 6.02, 6.02, 6.02, 6.02, 5.78]
+      },
+       girls: {
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [287.4, 282.5, 275.4, 271.9, 267.5, 259.0],
+        rbProb: [431.2, 364.1, 334.4, 297.9, 273.1, 239.0],
+        grapeProb: [6.30, 6.25, 6.20, 6.15, 6.10, 6.05]
+       },
     };
 
     function zScore(observed, expected, total) {
@@ -43,20 +85,27 @@
       return (observed - mean) / sd;
     }
 
-    function erf(x) {
-      const sign = Math.sign(x);
-      x = Math.abs(x);
-      const t = 1 / (1 + 0.5 * x);
-      const tau = t * Math.exp(-x * x - 1.26551223 + t * (
-        1.00002368 + t * (
-          0.37409196 + t * (
-            0.09678418 + t * (
-              -0.18628806 + t * (
-                0.27886807 + t * (
-                  -1.13520398 + t * (
-                    1.48851587 + t * (
-                      -0.82215223 + t * 0.17087277)))))))));
-      return sign * (1 - tau);
+    function percentileFromZ(z) {
+      const erf = x => {
+        const sign = Math.sign(x);
+        x = Math.abs(x);
+        const t = 1 / (1 + 0.5 * x);
+        const tau = t * Math.exp(-x * x - 1.26551223 + t * (
+          1.00002368 + t * (
+            0.37409196 + t * (
+              0.09678418 + t * (
+                -0.18628806 + t * (
+                  0.27886807 + t * (
+                    -1.13520398 + t * (
+                      1.48851587 + t * (
+                        -0.82215223 + t * 0.17087277)))))))));
+        return sign * (1 - tau);
+      };
+      return ((0.5 * (1 + erf(z / Math.SQRT2))) * 100);
+    }
+
+    function formatPercent(p) {
+      return (Math.round(p * 1000) / 1000).toFixed(2);
     }
 
     function calculate() {
@@ -71,12 +120,10 @@
       const result = [];
       const m = data[machine];
 
-      // 重み設定
       let rbWeight, gassanWeight, grapeWeight, bbWeight;
       const grapeValid = grape !== null && grape > 0;
 
       if (!grapeValid) {
-        // ブドウ無視モード
         rbWeight = 0.55;
         gassanWeight = 0.40;
         grapeWeight = 0;
@@ -97,12 +144,7 @@
         bbWeight = 0.05;
       }
 
-      const weights = {
-        bb: bbWeight,
-        rb: rbWeight,
-        grape: grapeWeight,
-        gassan: gassanWeight
-      };
+      const weights = { bb: bbWeight, rb: rbWeight, grape: grapeWeight, gassan: gassanWeight };
 
       for (let i = 0; i < m.setting.length; i++) {
         const bbZ = zScore(bb, m.bbProb[i], g);
@@ -117,9 +159,13 @@
         result.push({
           setting: m.setting[i],
           bbZ: bbZ.toFixed(2),
+          bbP: formatPercent(100 - percentileFromZ(bbZ)),
           rbZ: rbZ.toFixed(2),
-          grapeZ: grapeValid ? grapeZ.toFixed(2) : "-",
+          rbP: formatPercent(100 - percentileFromZ(rbZ)),
           gassanZ: gassanZ.toFixed(2),
+          gassanP: formatPercent(100 - percentileFromZ(gassanZ)),
+          grapeZ: grapeValid ? grapeZ.toFixed(2) : "-",
+          grapeP: grapeValid ? formatPercent(100 - percentileFromZ(grapeZ)) : "-",
           weight
         });
       }
@@ -127,9 +173,9 @@
       const totalWeight = result.reduce((sum, r) => sum + r.weight, 0);
       result.forEach(r => r.percentage = ((r.weight / totalWeight) * 100).toFixed(1));
 
-      let html = '<table class="result-table" border="1"><tr><th>設定</th><th>BB Z</th><th>RB Z</th><th>ブドウ Z</th><th>合算 Z</th><th>推定確率</th></tr>';
+      let html = '<table class="result-table" border="1"><tr><th>設定</th><th>BB Z</th><th>BB%</th><th>RB Z</th><th>RB%</th><th>合算 Z</th><th>合算%</th><th>ブドウ Z</th><th>ブドウ%</th><th>推定確率</th></tr>';
       result.forEach(r => {
-        html += `<tr><td>${r.setting}</td><td>${r.bbZ}</td><td>${r.rbZ}</td><td>${r.grapeZ}</td><td>${r.gassanZ}</td><td>${r.percentage}%</td></tr>`;
+        html += `<tr><td>${r.setting}</td><td>${r.bbZ}</td><td>${r.bbP}%</td><td>${r.rbZ}</td><td>${r.rbP}%</td><td>${r.gassanZ}</td><td>${r.gassanP}%</td><td>${r.grapeZ}</td><td>${r.grapeP}%</td><td>${r.percentage}%</td></tr>`;
       });
       html += '</table>';
 
