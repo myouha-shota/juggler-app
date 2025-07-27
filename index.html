@@ -108,79 +108,83 @@
       return (Math.round(p * 1000) / 1000).toFixed(2);
     }
 
-    function calculate() {
-      const machine = document.getElementById("machine").value;
-      const g = parseInt(document.getElementById("games").value);
-      const bb = parseInt(document.getElementById("bb").value);
-      const rb = parseInt(document.getElementById("rb").value);
-      const grapeInput = document.getElementById("grape").value;
-      const grape = grapeInput === "" ? null : parseInt(grapeInput);
-      const gassan = bb + rb;
+  function calculate() {
+  const machine = document.getElementById("machine").value;
+  const g = parseInt(document.getElementById("games").value);
+  const bb = parseInt(document.getElementById("bb").value);
+  const rb = parseInt(document.getElementById("rb").value);
+  const grapeInput = document.getElementById("grape").value;
+  const grape = grapeInput === "" ? null : parseInt(grapeInput);
+  const gassan = bb + rb;
 
-      const result = [];
-      const m = data[machine];
+  const result = [];
+  const m = data[machine];
 
-      let rbWeight, gassanWeight, grapeWeight, bbWeight;
-      const grapeValid = grape !== null && grape > 0;
+  const prior = [0.22, 0.43, 0.22, 0.09, 0.03, 0.01]; // 設定1～6の導入率
 
-      if (!grapeValid) {
-        rbWeight = 0.55;
-        gassanWeight = 0.40;
-        grapeWeight = 0;
-        bbWeight = 0.05;
-      } else {
-        if (g <= 1000) {
-          rbWeight = 0.30;
-          gassanWeight = 0.50;
-        } else if (g >= 2500) {
-          rbWeight = 0.55;
-          gassanWeight = 0.25;
-        } else {
-          const ratio = (g - 1000) / 1500;
-          rbWeight = 0.30 + 0.25 * ratio;
-          gassanWeight = 0.50 - 0.25 * ratio;
-        }
-        grapeWeight = 0.15;
-        bbWeight = 0.05;
-      }
+  let rbWeight, gassanWeight, grapeWeight, bbWeight;
+  const grapeValid = grape !== null && grape > 0;
 
-      const weights = { bb: bbWeight, rb: rbWeight, grape: grapeWeight, gassan: gassanWeight };
-
-      for (let i = 0; i < m.setting.length; i++) {
-        const bbZ = zScore(bb, m.bbProb[i], g);
-        const rbZ = zScore(rb, m.rbProb[i], g);
-        const grapeZ = grapeValid ? zScore(grape, m.grapeProb[i], g) : 0;
-        const gassanProb = 1 / ((1 / m.bbProb[i]) + (1 / m.rbProb[i]));
-        const gassanZ = zScore(gassan, gassanProb, g);
-
-        const weightedSum = weights.bb * bbZ**2 + weights.rb * rbZ**2 + weights.grape * grapeZ**2 + weights.gassan * gassanZ**2;
-        const weight = Math.exp(-weightedSum);
-
-        result.push({
-          setting: m.setting[i],
-          bbZ: bbZ.toFixed(2),
-          bbP: formatPercent(100 - percentileFromZ(bbZ)),
-          rbZ: rbZ.toFixed(2),
-          rbP: formatPercent(100 - percentileFromZ(rbZ)),
-          gassanZ: gassanZ.toFixed(2),
-          gassanP: formatPercent(100 - percentileFromZ(gassanZ)),
-          grapeZ: grapeValid ? grapeZ.toFixed(2) : "-",
-          grapeP: grapeValid ? formatPercent(100 - percentileFromZ(grapeZ)) : "-",
-          weight
-        });
-      }
-
-      const totalWeight = result.reduce((sum, r) => sum + r.weight, 0);
-      result.forEach(r => r.percentage = ((r.weight / totalWeight) * 100).toFixed(1));
-
-      let html = '<table class="result-table" border="1"><tr><th>設定</th><th>BB Z</th><th>BB%</th><th>RB Z</th><th>RB%</th><th>合算 Z</th><th>合算%</th><th>ブドウ Z</th><th>ブドウ%</th><th>推定確率</th></tr>';
-      result.forEach(r => {
-        html += `<tr><td>${r.setting}</td><td>${r.bbZ}</td><td>${r.bbP}%</td><td>${r.rbZ}</td><td>${r.rbP}%</td><td>${r.gassanZ}</td><td>${r.gassanP}%</td><td>${r.grapeZ}</td><td>${r.grapeP}%</td><td>${r.percentage}%</td></tr>`;
-      });
-      html += '</table>';
-
-      document.getElementById("output").innerHTML = html;
+  if (!grapeValid) {
+    rbWeight = 0.55;
+    gassanWeight = 0.40;
+    grapeWeight = 0;
+    bbWeight = 0.05;
+  } else {
+    if (g <= 1000) {
+      rbWeight = 0.30;
+      gassanWeight = 0.50;
+    } else if (g >= 2500) {
+      rbWeight = 0.55;
+      gassanWeight = 0.25;
+    } else {
+      const ratio = (g - 1000) / 1500;
+      rbWeight = 0.30 + 0.25 * ratio;
+      gassanWeight = 0.50 - 0.25 * ratio;
     }
+    grapeWeight = 0.15;
+    bbWeight = 0.05;
+  }
+
+  const weights = { bb: bbWeight, rb: rbWeight, grape: grapeWeight, gassan: gassanWeight };
+
+  for (let i = 0; i < m.setting.length; i++) {
+    const bbZ = zScore(bb, m.bbProb[i], g);
+    const rbZ = zScore(rb, m.rbProb[i], g);
+    const grapeZ = grapeValid ? zScore(grape, m.grapeProb[i], g) : 0;
+    const gassanProb = 1 / ((1 / m.bbProb[i]) + (1 / m.rbProb[i]));
+    const gassanZ = zScore(gassan, gassanProb, g);
+
+    const weightedSum = weights.bb * bbZ**2 + weights.rb * rbZ**2 + weights.grape * grapeZ**2 + weights.gassan * gassanZ**2;
+    const likelihood = Math.exp(-weightedSum); // 観測値との一致度（尤度）
+    const weightedLikelihood = likelihood * prior[i]; // 導入率による補正
+
+    result.push({
+      setting: m.setting[i],
+      bbZ: bbZ.toFixed(2),
+      bbP: formatPercent(100 - percentileFromZ(bbZ)),
+      rbZ: rbZ.toFixed(2),
+      rbP: formatPercent(100 - percentileFromZ(rbZ)),
+      gassanZ: gassanZ.toFixed(2),
+      gassanP: formatPercent(100 - percentileFromZ(gassanZ)),
+      grapeZ: grapeValid ? grapeZ.toFixed(2) : "-",
+      grapeP: grapeValid ? formatPercent(100 - percentileFromZ(grapeZ)) : "-",
+      weight: weightedLikelihood
+    });
+  }
+
+  const totalWeight = result.reduce((sum, r) => sum + r.weight, 0);
+  result.forEach(r => r.percentage = ((r.weight / totalWeight) * 100).toFixed(1));
+
+  let html = '<table class="result-table" border="1"><tr><th>設定</th><th>BB Z</th><th>BB%</th><th>RB Z</th><th>RB%</th><th>合算 Z</th><th>合算%</th><th>ブドウ Z</th><th>ブドウ%</th><th>推定確率</th></tr>';
+  result.forEach(r => {
+    html += `<tr><td>${r.setting}</td><td>${r.bbZ}</td><td>${r.bbP}%</td><td>${r.rbZ}</td><td>${r.rbP}%</td><td>${r.gassanZ}</td><td>${r.gassanP}%</td><td>${r.grapeZ}</td><td>${r.grapeP}%</td><td>${r.percentage}%</td></tr>`;
+  });
+  html += '</table>';
+
+  document.getElementById("output").innerHTML = html;
+}
+
   </script>
 </body>
 </html>
