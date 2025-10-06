@@ -8,21 +8,26 @@
     body { font-family: sans-serif; padding: 20px; }
     label, select, input { display: block; margin: 10px 0; }
     .result { margin-top: 20px; }
-    .result-table td { padding: 4px 8px; }
+    .result-table td, .result-table th { padding: 4px 8px; }
+    .summary { margin-top: 16px; padding: 12px; background:#f7f7f7; border:1px solid #ddd; }
+    .summary h3 { margin: 0 0 8px 0; font-size: 1.05rem; }
+    .summary table { border-collapse: collapse; }
+    .summary td, .summary th { padding: 6px 8px; border: 1px solid #ccc; }
+    .note { font-size: 0.9rem; color:#444; margin-top:8px; }
   </style>
 </head>
 <body>
   <h1>ジャグラー設定推測アプリ</h1>
   <label>機種選択:
     <select id="machine">
-    <option value="myjugg5">マイジャグラーV</option>
-    <option value="gojugg3">ゴーゴージャグラー3</option>
-    <option value="aim">アイムジャグラーEX</option>
-    <option value="happy">ハッピージャグラーVIII</option>
-    <option value="mister">ミスタージャグラー</option>
-    <option value="ulmira">ウルトラミラクルジャグラー</option>
-    <option value="girls">ジャグラーガールズSS</option>
-    <option value="funky">ファンキージャグラー2</option>
+      <option value="myjugg5">マイジャグラーV</option>
+      <option value="gojugg3">ゴーゴージャグラー3</option>
+      <option value="aim">アイムジャグラーEX</option>
+      <option value="happy">ハッピージャグラーVIII</option>
+      <option value="mister">ミスタージャグラー</option>
+      <option value="ulmira">ウルトラミラクルジャグラー</option>
+      <option value="girls">ジャグラーガールズSS</option>
+      <option value="funky">ファンキージャグラー2</option>
     </select>
   </label>
   <label>回転数: <input type="number" id="games" inputmode="numeric" pattern="[0-9]*" /></label>
@@ -34,6 +39,7 @@
   <div class="result" id="output"></div>
 
   <script>
+    // --- 基礎データ ---
     const data = {
       myjugg5: {
         setting: [1, 2, 3, 4, 5, 6],
@@ -71,27 +77,30 @@
         rbProb: [425.6, 402.1, 350.5, 322.8, 297.9, 277.7],
         grapeProb: [5.93, 5.93, 5.93, 5.93, 5.87, 5.81]
       },
-       girls: {
+      girls: {
         setting: [1, 2, 3, 4, 5, 6],
         bbProb: [273.1, 270.8, 260.0, 250.1, 243.6, 225.9],
         rbProb: [381.0, 350.4, 316.6, 281.2, 270.8, 252.0],
         grapeProb: [5.98, 5.98, 5.98, 5.98, 5.98, 5.83]
-       },
-       funky: {
+      },
+      funky: {
         setting: [1, 2, 3, 4, 5, 6],
         bbProb: [266.4, 259.0, 256.0, 249.2, 240.1, 219.1],
         rbProb: [439.8, 407.1, 336.1, 322.8, 299.3, 262.1],
         grapeProb: [5.94, 5.93, 5.88, 5.83, 5.75, 5.66]
-       },
+      },
     };
 
+    // 事前分布（導入率）
+    const prior = [0.22, 0.43, 0.22, 0.09, 0.03, 0.01];
+
+    // --- 数学ユーティリティ ---
     function zScore(observed, expected, total) {
       const p = 1 / expected;
       const mean = total * p;
       const sd = Math.sqrt(total * p * (1 - p));
       return (observed - mean) / sd;
     }
-
     function percentileFromZ(z) {
       const erf = x => {
         const sign = Math.sign(x);
@@ -110,88 +119,195 @@
       };
       return ((0.5 * (1 + erf(z / Math.SQRT2))) * 100);
     }
-
+    function formatPercent2(p) {
+      // 0-100の数値を小数1桁表現
+      return (Math.round(p * 10) / 10).toFixed(1);
+    }
     function formatPercent(p) {
+      // 0-100の数値を小数2桁表現（既存テーブル用）
       return (Math.round(p * 1000) / 1000).toFixed(2);
     }
 
-  function calculate() {
-  const machine = document.getElementById("machine").value;
-  const g = parseInt(document.getElementById("games").value);
-  const bb = parseInt(document.getElementById("bb").value);
-  const rb = parseInt(document.getElementById("rb").value);
-  const grapeInput = document.getElementById("grape").value;
-  const grape = grapeInput === "" ? null : parseInt(grapeInput);
-  const gassan = bb + rb;
-
-  const result = [];
-  const m = data[machine];
-
-  const prior = [0.22, 0.43, 0.22, 0.09, 0.03, 0.01]; // 設定1～6の導入率
-
-  let rbWeight, gassanWeight, grapeWeight, bbWeight;
-  const grapeValid = grape !== null && grape > 0;
-
-  if (!grapeValid) {
-    rbWeight = 0.55;
-    gassanWeight = 0.40;
-    grapeWeight = 0;
-    bbWeight = 0.05;
-  } else {
-    if (g <= 1000) {
-      rbWeight = 0.30;
-      gassanWeight = 0.50;
-    } else if (g >= 2500) {
-      rbWeight = 0.55;
-      gassanWeight = 0.25;
-    } else {
-      const ratio = (g - 1000) / 1500;
-      rbWeight = 0.30 + 0.25 * ratio;
-      gassanWeight = 0.50 - 0.25 * ratio;
+    // --- 高設定の定義（アイム/ゴージャグは5・6、それ以外は4・5・6） ---
+    function highSettingIndices(machineKey) {
+      // 配列index基準（0始まり）
+      // 設定: [1,2,3,4,5,6] → index [0,1,2,3,4,5]
+      if (machineKey === 'aim' || machineKey === 'gojugg3') {
+        return [4, 5]; // 5,6
+      }
+      return [3, 4, 5]; // 4,5,6
     }
-    grapeWeight = 0.15;
-    bbWeight = 0.05;
-  }
 
-  const weights = { bb: bbWeight, rb: rbWeight, grape: grapeWeight, gassan: gassanWeight };
+    // --- 重み（総回転数・ブドウ入力の有無で変動） ---
+    function deriveWeights(g, grapeValid) {
+      let rbWeight, gassanWeight, grapeWeight, bbWeight;
+      if (!grapeValid) {
+        rbWeight = 0.55;
+        gassanWeight = 0.40;
+        grapeWeight = 0.00;
+        bbWeight = 0.05;
+      } else {
+        if (g <= 1000) {
+          rbWeight = 0.30;
+          gassanWeight = 0.50;
+        } else if (g >= 2500) {
+          rbWeight = 0.55;
+          gassanWeight = 0.25;
+        } else {
+          const ratio = (g - 1000) / 1500;
+          rbWeight = 0.30 + 0.25 * ratio;
+          gassanWeight = 0.50 - 0.25 * ratio;
+        }
+        grapeWeight = 0.15;
+        bbWeight = 0.05;
+      }
+      return { bb: bbWeight, rb: rbWeight, grape: grapeWeight, gassan: gassanWeight };
+    }
 
-  for (let i = 0; i < m.setting.length; i++) {
-    const bbZ = zScore(bb, m.bbProb[i], g);
-    const rbZ = zScore(rb, m.rbProb[i], g);
-    const grapeZ = grapeValid ? zScore(grape, m.grapeProb[i], g) : 0;
-    const gassanProb = 1 / ((1 / m.bbProb[i]) + (1 / m.rbProb[i]));
-    const gassanZ = zScore(gassan, gassanProb, g);
+    // --- 尤度→事後（％）の計算本体（既存ロジックを関数化） ---
+    function computeResult(machineKey, g, bb, rb, grape) {
+      const m = data[machineKey];
+      const grapeValid = (grape !== null) && (grape > 0);
+      const weights = deriveWeights(g, grapeValid);
 
-    const weightedSum = weights.bb * bbZ**2 + weights.rb * rbZ**2 + weights.grape * grapeZ**2 + weights.gassan * gassanZ**2;
-    const likelihood = Math.exp(-weightedSum); // 観測値との一致度（尤度）
-    const weightedLikelihood = likelihood * prior[i]; // 導入率による補正
+      const rows = [];
+      let totalWeight = 0;
 
-    result.push({
-      setting: m.setting[i],
-      bbZ: bbZ.toFixed(2),
-      bbP: formatPercent(100 - percentileFromZ(bbZ)),
-      rbZ: rbZ.toFixed(2),
-      rbP: formatPercent(100 - percentileFromZ(rbZ)),
-      gassanZ: gassanZ.toFixed(2),
-      gassanP: formatPercent(100 - percentileFromZ(gassanZ)),
-      grapeZ: grapeValid ? grapeZ.toFixed(2) : "-",
-      grapeP: grapeValid ? formatPercent(100 - percentileFromZ(grapeZ)) : "-",
-      weight: weightedLikelihood
-    });
-  }
+      for (let i = 0; i < m.setting.length; i++) {
+        const bbZ = zScore(bb, m.bbProb[i], g);
+        const rbZ = zScore(rb, m.rbProb[i], g);
+        const grapeZ = grapeValid ? zScore(grape, m.grapeProb[i], g) : 0;
+        const gassanProb = 1 / ((1 / m.bbProb[i]) + (1 / m.rbProb[i]));
+        const gassanZ = zScore(bb + rb, gassanProb, g);
 
-  const totalWeight = result.reduce((sum, r) => sum + r.weight, 0);
-  result.forEach(r => r.percentage = ((r.weight / totalWeight) * 100).toFixed(1));
+        const weightedSum = weights.bb * bbZ**2
+                          + weights.rb * rbZ**2
+                          + weights.grape * grapeZ**2
+                          + weights.gassan * gassanZ**2;
 
-  let html = '<table class="result-table" border="1"><tr><th>設定</th><th>BB Z</th><th>BB%</th><th>RB Z</th><th>RB%</th><th>合算 Z</th><th>合算%</th><th>ブドウ Z</th><th>ブドウ%</th><th>推定確率</th></tr>';
-  result.forEach(r => {
-    html += `<tr><td>${r.setting}</td><td>${r.bbZ}</td><td>${r.bbP}%</td><td>${r.rbZ}</td><td>${r.rbP}%</td><td>${r.gassanZ}</td><td>${r.gassanP}%</td><td>${r.grapeZ}</td><td>${r.grapeP}%</td><td>${r.percentage}%</td></tr>`;
-  });
-  html += '</table>';
+        const likelihood = Math.exp(-weightedSum);
+        const w = likelihood * prior[i];
 
-  document.getElementById("output").innerHTML = html;
-}
+        rows.push({
+          setting: m.setting[i],
+          bbZ: bbZ, rbZ: rbZ, gassanZ: gassanZ, grapeZ: grapeZ,
+          bbP: (100 - percentileFromZ(bbZ)),
+          rbP: (100 - percentileFromZ(rbZ)),
+          gassanP: (100 - percentileFromZ(gassanZ)),
+          grapeP: grapeValid ? (100 - percentileFromZ(grapeZ)) : null,
+          weight: w
+        });
+        totalWeight += w;
+      }
 
+      // 正規化して事後％
+      rows.forEach(r => r.percentage = (r.weight / totalWeight) * 100);
+
+      // 高設定合算
+      const hiIdx = highSettingIndices(machineKey);
+      const sumHigh = hiIdx.reduce((s, idx) => s + rows[idx].percentage, 0);
+
+      return { rows, sumHigh }; // rows: 各設定の事後％を含む
+    }
+
+    // 高設定合算（％）だけ欲しいとき
+    function computeSumHigh(machineKey, g, bb, rb, grape) {
+      return computeResult(machineKey, g, bb, rb, grape).sumHigh;
+    }
+
+    // --- 「RB不発で閾値を下回るまでの残り回転数」を探索 ---
+    function spinsUntilDropBelow(machineKey, g, bb, rb, grape, threshold, maxSpins = 5000) {
+      // 現在はthreshold以上である前提で呼ぶ（外で制御）
+      for (let add = 0; add <= maxSpins; add++) {
+        const s = computeSumHigh(machineKey, g + add, bb, rb, grape);
+        if (s < threshold) return add;
+      }
+      return null; // 規定内で下回らない
+    }
+
+    // --- 「300G内で閾値を上回るために必要なRB回数」を探索 ---
+    function rbNeededWithin300(machineKey, g, bb, rb, grape, threshold, windowG = 300) {
+      const g2 = g + windowG;
+      for (let need = 0; need <= windowG; need++) {
+        const s = computeSumHigh(machineKey, g2, bb, rb + need, grape);
+        if (s >= threshold) return need;
+      }
+      return null; // 300Gでは到達不可
+    }
+
+    // --- 画面更新 ---
+    function calculate() {
+      const machine = document.getElementById("machine").value;
+      const g = parseInt(document.getElementById("games").value);
+      const bb = parseInt(document.getElementById("bb").value);
+      const rb = parseInt(document.getElementById("rb").value);
+      const grapeInput = document.getElementById("grape").value;
+      const grape = grapeInput === "" ? null : parseInt(grapeInput);
+
+      if (!Number.isFinite(g) || !Number.isFinite(bb) || !Number.isFinite(rb) || g <= 0) {
+        document.getElementById("output").innerHTML = "<p>入力値（回転数・BB・RB）を確認してください。</p>";
+        return;
+      }
+
+      // 既存テーブルの描画
+      const { rows, sumHigh } = computeResult(machine, g, bb, rb, grape);
+
+      let html = '<table class="result-table" border="1"><tr><th>設定</th><th>BB Z</th><th>BB%</th><th>RB Z</th><th>RB%</th><th>合算 Z</th><th>合算%</th><th>ブドウ Z</th><th>ブドウ%</th><th>推定確率</th></tr>';
+      rows.forEach((r) => {
+        html += `<tr>
+          <td>${r.setting}</td>
+          <td>${r.bbZ.toFixed(2)}</td>
+          <td>${formatPercent(r.bbP)}%</td>
+          <td>${r.rbZ.toFixed(2)}</td>
+          <td>${formatPercent(r.rbP)}%</td>
+          <td>${r.gassanZ.toFixed(2)}</td>
+          <td>${formatPercent(r.gassanP)}%</td>
+          <td>${r.grapeP === null ? '-' : r.grapeZ.toFixed(2)}</td>
+          <td>${r.grapeP === null ? '-' : formatPercent(r.grapeP) + '%'}</td>
+          <td>${(r.percentage).toFixed(1)}%</td>
+        </tr>`;
+      });
+      html += '</table>';
+
+      // 追加要件：高設定合算の現状値
+      const hiIdx = highSettingIndices(machine);
+      const hiLabel = (machine === 'aim' || machine === 'gojugg3') ? '（設定5・6）' : '（設定4～6）';
+
+      // 各閾値に対する分岐
+      const thresholds = [75, 50, 30];
+      let rowsExtra = '';
+
+      thresholds.forEach(th => {
+        if (sumHigh >= th) {
+          // まだ高い → RB不発で何Gで割り込むか
+          const addG = spinsUntilDropBelow(machine, g, bb, rb, grape, th, 5000);
+          const display = (addG === null) ? '&gt;5000G' : (addG + 'G');
+          rowsExtra += `<tr><td>${th}%</td><td>RB不発で閾値割れまで</td><td>${display}</td></tr>`;
+        } else {
+          // すでに下回っている → 次の300Gで到達するための必要RB回数
+          const needRB = rbNeededWithin300(machine, g, bb, rb, grape, th, 300);
+          const display = (needRB === null) ? '300Gでは到達不可' : (needRB + '回（/300G）');
+          rowsExtra += `<tr><td>${th}%</td><td>300G内で再到達に必要RB</td><td>${display}</td></tr>`;
+        }
+      });
+
+      const extra = `
+        <div class="summary">
+          <h3>高設定合算${hiLabel} の推定合計</h3>
+          <p><strong>${formatPercent2(sumHigh)}%</strong></p>
+          <table>
+            <tr><th>閾値</th><th>評価項目</th><th>結果</th></tr>
+            ${rowsExtra}
+          </table>
+          <div class="note">
+            ※シミュレーションは指定条件に合わせ、RBのみを変数とし、BB・ブドウは固定のまま総回転数のみ増減させています（重みは総回転数に応じて再計算）。<br>
+            ※「RB不発で閾値割れまで」は現在値が当該閾値以上のときに表示され、すでに下回っている閾値については「次の300Gで再到達に必要なRB回数」を代わりに表示します。
+          </div>
+        </div>
+      `;
+
+      document.getElementById("output").innerHTML = html + extra;
+    }
   </script>
 </body>
 </html>
