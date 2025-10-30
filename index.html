@@ -7,6 +7,8 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     label, select, input { display: block; margin: 10px 0; }
+    .inline { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .inline label { margin: 0; }
     .result { margin-top: 20px; }
     .result-table td, .result-table th { padding: 4px 8px; }
     .summary { margin-top: 16px; padding: 12px; background:#f7f7f7; border:1px solid #ddd; }
@@ -30,10 +32,19 @@
       <option value="funky">ファンキージャグラー2</option>
     </select>
   </label>
-  <label>合算BB回数: <input type="number" id="bb_total" inputmode="numeric" pattern="[0-9]*" /></label>
-  <label>合算RB回数: <input type="number" id="rb_total" inputmode="numeric" pattern="[0-9]*" /></label>
+
+  <div class="inline">
+    <label>単独BB回数: <input type="number" id="bb_solo" inputmode="numeric" pattern="[0-9]*" /></label>
+    <label>チェリーBB回数: <input type="number" id="bb_cherry" inputmode="numeric" pattern="[0-9]*" /></label>
+  </div>
+  <div class="inline">
+    <label>単独RB回数: <input type="number" id="rb_solo" inputmode="numeric" pattern="[0-9]*" /></label>
+    <label>チェリーRB回数: <input type="number" id="rb_cherry" inputmode="numeric" pattern="[0-9]*" /></label>
+  </div>
+
   <label>回転数: <input type="number" id="games" inputmode="numeric" pattern="[0-9]*" /></label>
   <label>ブドウ回数: <input type="number" id="grape" inputmode="numeric" pattern="[0-9]*" /></label>
+
   <button onclick="calculate()">計算</button>
 
   <div class="result" id="output"></div>
@@ -154,18 +165,18 @@
     function formatPercent2(p) { return (Math.round(p * 10) / 10).toFixed(1); }
     function formatPercent(p)  { return (Math.round(p * 1000) / 1000).toFixed(2); }
 
-    // --- 高設定の定義（アイム/ゴージャグは5・6、それ以外は4・5・6） ---
+    // --- 高設定定義 ---
     function highSettingIndices(machineKey) {
       if (machineKey === 'aim' || machineKey === 'gojugg3') return [4, 5];
       return [3, 4, 5];
     }
 
-    // ★ 機種別の重みルール（固定：3機種 / 可変：その他）
+    // --- 機種別重み ---
     function deriveWeights(machineKey, g, grapeValid) {
       if (machineKey === 'myjugg5') return { bb: 0.10, rb: 0.50, gassan: 0.40, grape: 0.00 };
       if (machineKey === 'gojugg3') return { bb: 0.10, rb: 0.45, gassan: 0.45, grape: 0.00 };
       if (machineKey === 'aim')     return { bb: 0.05, rb: 0.55, gassan: 0.40, grape: 0.00 };
-      // それ以外は従来の可変
+      // それ以外は従来可変
       let rbWeight, gassanWeight, grapeWeight, bbWeight;
       if (!grapeValid) {
         rbWeight = 0.55; gassanWeight = 0.40; grapeWeight = 0.00; bbWeight = 0.05;
@@ -225,11 +236,12 @@
 
       return { rows, sumHigh };
     }
+
     function computeSumHigh(machineKey, g, bbTotal, rbTotal, grape) {
       return computeResult(machineKey, g, bbTotal, rbTotal, grape).sumHigh;
     }
 
-    // --- 既存：RB不発で閾値割れまで（現在値がしきい値以上の場合に使用）
+    // --- 既存の探索群（RB 300/600 対応、BB z>=0 判定） ---
     function spinsUntilDropBelow(machineKey, g, bbTotal, rbTotal, grape, threshold, maxSpins = 5000) {
       for (let add = 0; add <= maxSpins; add++) {
         const s = computeSumHigh(machineKey, g + add, bbTotal, rbTotal, grape);
@@ -237,8 +249,6 @@
       }
       return null;
     }
-
-    // --- 既存拡張：指定ウィンドウ内で閾値に到達するために必要RB（300/600両対応）
     function rbNeededWithin(machineKey, g, bbTotal, rbTotal, grape, threshold, windowG) {
       const g2 = g + windowG;
       for (let need = 0; need <= windowG; need++) {
@@ -247,12 +257,9 @@
       }
       return null;
     }
-
-    // === 新規：BBに関する「設定6仮定の z>=0」到達・維持の判定 ===
-    // 1) windowG 内で z>=0 にするために必要な BB 回数（最小値）を返す。到達不可なら null。
     function bbNeededForZNonNegativeWithin(machineKey, g, bbTotal, windowG) {
       const m = data[machineKey];
-      const exp = m.bbProb[5]; // 設定6のBB公表値
+      const exp = m.bbProb[5]; // 設定6のBB期待値
       const totalAfter = g + windowG;
       for (let need = 0; need <= windowG; need++) {
         const z = zScore(bbTotal + need, exp, totalAfter);
@@ -260,11 +267,9 @@
       }
       return null;
     }
-    // 2) BBを引かない場合、何回転までで z<0 に落ちるか（最小の回転数）。maxSpins まで見て無ければ null。
     function bbNoHitSpinsUntilZBelow0(machineKey, g, bbTotal, maxSpins = 5000) {
       const m = data[machineKey];
-      const exp = m.bbProb[5]; // 設定6のBB
-      // すでに z<0 なら 0 を返す（現状で負けている）
+      const exp = m.bbProb[5];
       if (zScore(bbTotal, exp, g) < 0) return 0;
       for (let add = 1; add <= maxSpins; add++) {
         const z = zScore(bbTotal, exp, g + add);
@@ -273,7 +278,7 @@
       return null;
     }
 
-    // --- 内訳確率テーブル（ひな形）
+    // --- 内訳表（ひな形）
     function renderBreakdownTable(machineKey) {
       const m = data[machineKey];
       const header = ['設定', '1', '2', '3', '4', '5', '6'];
@@ -290,7 +295,7 @@
         html += '<tr>' + r.map((c,i)=> i===0? `<th>${c}</th>` : `<td>${c}</td>`).join('') + '</tr>';
       }
       html += '</tbody></table>';
-      html += '<div class="note">※各セルは公表値や実測から後で埋める前提のプレースホルダーです（1/x 表記）。</div>';
+      html += '<div class="note">※チェリー内訳を未入力の場合、単独欄は「合算」として扱われます。</div>';
       html += '</div>';
       return html;
     }
@@ -298,20 +303,48 @@
     // --- 画面更新 ---
     function calculate() {
       const machine = document.getElementById("machine").value;
-      const g = parseInt(document.getElementById("games").value);
-      const bbTotal = parseInt(document.getElementById("bb_total").value);
-      const rbTotal = parseInt(document.getElementById("rb_total").value);
-      const grapeInput = document.getElementById("grape").value;
-      const grape = grapeInput === "" ? null : parseInt(grapeInput);
 
-      if (!Number.isFinite(g) || !Number.isFinite(bbTotal) || !Number.isFinite(rbTotal) || g <= 0) {
-        document.getElementById("output").innerHTML = "<p>入力値（回転数・合算BB・合算RB）を確認してください。</p>";
+      const gStr = document.getElementById("games").value;
+      const g = gStr === "" ? NaN : parseInt(gStr);
+
+      // 入力の読み込み（空欄は null）
+      const bbSoloStr   = document.getElementById("bb_solo").value;
+      const bbCherryStr = document.getElementById("bb_cherry").value;
+      const rbSoloStr   = document.getElementById("rb_solo").value;
+      const rbCherryStr = document.getElementById("rb_cherry").value;
+      const grapeStr    = document.getElementById("grape").value;
+
+      const bbSolo   = bbSoloStr === "" ? null : parseInt(bbSoloStr);
+      const bbCherry = bbCherryStr === "" ? null : parseInt(bbCherryStr);
+      const rbSolo   = rbSoloStr === "" ? null : parseInt(rbSoloStr);
+      const rbCherry = rbCherryStr === "" ? null : parseInt(rbCherryStr);
+      const grape    = grapeStr  === "" ? null : parseInt(grapeStr);
+
+      if (!Number.isFinite(g) || g <= 0) {
+        document.getElementById("output").innerHTML = "<p>回転数（G数）を入力してください。</p>";
         return;
+      }
+
+      // 合算化ルール：
+      // ・チェリー欄が空欄なら、単独欄は「合算」とみなして総回数に採用
+      // ・チェリー欄が数値なら、総回数 = （単独||0） + チェリー
+      let bbTotal, rbTotal;
+
+      if (bbCherry === null) {
+        bbTotal = (bbSolo === null) ? 0 : bbSolo; // 単独=合算扱い
+      } else {
+        bbTotal = (bbSolo || 0) + bbCherry;
+      }
+
+      if (rbCherry === null) {
+        rbTotal = (rbSolo === null) ? 0 : rbSolo; // 単独=合算扱い
+      } else {
+        rbTotal = (rbSolo || 0) + rbCherry;
       }
 
       const { rows, sumHigh } = computeResult(machine, g, bbTotal, rbTotal, grape);
 
-      // 結果テーブル
+      // 結果テーブル（出力は合算ベースのBB/RB）
       let html = '<table class="result-table" border="1"><tr>' +
                  '<th>設定</th>' +
                  '<th>BB Z</th><th>BB%</th>' +
@@ -340,10 +373,10 @@
       // 高設定合算まとめ
       const hiLabel = (machine === 'aim' || machine === 'gojugg3') ? '（設定5・6）' : '（設定4～6）';
 
-      // しきい値テーブル（RB：300/600両対応）
+      // RBしきい値（300/600）
       const thresholds = [75, 50, 30];
-      let rowsExtraTop = '';  // 現在≥しきい値：RB不発で閾値割れまで
-      let rowsExtraNeed = ''; // 現在＜しきい値：再到達に必要RB（300/600）
+      let rowsExtraTop = '';
+      let rowsExtraNeed = '';
       thresholds.forEach(th => {
         if (sumHigh >= th) {
           const addG = spinsUntilDropBelow(machine, g, bbTotal, rbTotal, grape, th, 5000);
@@ -368,13 +401,14 @@
             ${rowsExtraNeed}
           </table>
           <div class="note">
-            ※RBに関する再到達判定は、指定ウィンドウ内でRBを可変とし、他要素（BB/ブドウ）は固定したまま総回転数のみを加算して評価しています。<br>
-            ※現在閾値以上の行は「RB不発で何Gまで持つか」を表示、未満の行は「300G/600Gで再到達に要するRB回数」を併記します。
+            ※RBの再到達判定は、指定ウィンドウ内でRBを可変とし、BB/ブドウは固定したまま総回転数のみ加算して評価。<br>
+            ※現在閾値以上の行は「RB不発で何Gまで持つか」、未満の行は「300G/600Gで再到達に要するRB回数」を表示。<br>
+            ※入力ルール：チェリー欄が空欄の場合、単独欄は「合算」として扱われます。
           </div>
         </div>
       `;
 
-      // 新規：BB × 設定6仮定の z≥0 条件まとめ
+      // BB（設定6仮定 z≥0）ブロック
       const bbNeed300 = bbNeededForZNonNegativeWithin(machine, g, bbTotal, 300);
       const bbNeed600 = bbNeededForZNonNegativeWithin(machine, g, bbTotal, 600);
       const bbFall300 = bbNoHitSpinsUntilZBelow0(machine, g, bbTotal, 300);
@@ -384,9 +418,7 @@
         <div class="summary">
           <h3>BBの「設定6仮定で z≥0」到達・維持条件</h3>
           <table>
-            <tr>
-              <th></th><th>300G内</th><th>600G内</th>
-            </tr>
+            <tr><th></th><th>300G内</th><th>600G内</th></tr>
             <tr>
               <td>到達に必要なBB回数（最小）</td>
               <td>${bbNeed300 === null ? '到達不可' : `${bbNeed300} 回`}</td>
@@ -398,21 +430,15 @@
               <td>${bbFall600 === null ? '&gt;600G' : `${bbFall600} G`}</td>
             </tr>
           </table>
-          <div class="note">
-            ※ここでは各機種の<strong>設定6のBB公表値</strong>を期待値とし、z=0（＝期待値どおり）を境に、<br>
-            ・ウィンドウ内で必要なBB回数（最小）と、<br>
-            ・BBが一切引けなかった場合に z が負転（期待値割れ）する最短G数<br>
-            を表示しています。RB/ブドウは固定、総回転数のみをウィンドウ分だけ加算して判定します。
-          </div>
         </div>
       `;
 
-      // 重みの注記
+      // 重み注記
       const weightNote = (() => {
         if (machine === 'myjugg5') return '重み：BB10% / RB50% / ボナ合算40%（ブドウ0%）';
         if (machine === 'gojugg3') return '重み：BB10% / RB45% / ボナ合算45%（ブドウ0%）';
         if (machine === 'aim')     return '重み：BB5% / RB55% / ボナ合算40%（ブドウ0%）';
-        return '重み：従来ロジック（ブドウ入力時は最大15%加点、回転数でRBと合算の比率が可変）';
+        return '重み：従来ロジック（ブドウ入力時は最大15%、回転数でRBと合算の比率が可変）';
       })();
 
       const info = `
@@ -422,7 +448,6 @@
         </div>
       `;
 
-      // 内訳ひな形テーブル
       const breakdown = renderBreakdownTable(machine);
 
       document.getElementById("output").innerHTML = html + extra + bbBlock + info + breakdown;
