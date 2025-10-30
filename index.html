@@ -9,13 +9,16 @@
     label, select, input { display: block; margin: 10px 0; }
     .inline { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     .inline label { margin: 0; }
-    .result { margin-top: 20px; }
-    .result-table td, .result-table th { padding: 4px 8px; }
+    .result { margin-top: 20px; overflow-x: auto; }
+    .result-table td, .result-table th { padding: 4px 8px; white-space: nowrap; }
     .summary { margin-top: 16px; padding: 12px; background:#f7f7f7; border:1px solid #ddd; }
     .summary h3 { margin: 0 0 8px 0; font-size: 1.05rem; }
     .summary table { border-collapse: collapse; width: 100%; }
     .summary td, .summary th { padding: 6px 8px; border: 1px solid #ccc; text-align: center; }
     .note { font-size: 0.9rem; color:#444; margin-top:8px; }
+    .diagnosis { margin-top: 12px; line-height: 1.6; }
+    .chart-wrap { margin-top: 12px; }
+    canvas { max-width: 700px; width: 100%; height: 240px; border:1px solid #ddd; background:#fff; }
   </style>
 </head>
 <body>
@@ -53,404 +56,408 @@
     // --- 基礎データ ---
     const data = {
       myjugg5: {
-        setting: [1, 2, 3, 4, 5, 6],
-        bbProb: [273.1, 270.8, 266.4, 254.0, 240.1, 229.1],
-        rbProb: [409.6, 385.5, 336.1, 290.0, 268.6, 229.1],
-        grapeProb: [5.90, 5.85, 5.80, 5.78, 5.76, 5.66],
-        soloBbProb:   [420.1, 414.8, 404.5, 376.6, 348.6, 341.3],
-        cherryBbProb: [1356, 1356, 1356, 1356, 1337, 1130],
-        soloRbProb:   [655.4, 595.8, 496.5, 404.5, 390.1, 327.7],
-        cherryRbProb: [1092.0, 1092.0, 1040.0, 1024.0, 862.0, 762.0],
+        setting: [1,2,3,4,5,6],
+        bbProb: [273.1,270.8,266.4,254.0,240.1,229.1],
+        rbProb: [409.6,385.5,336.1,290.0,268.6,229.1],
+        grapeProb: [5.90,5.85,5.80,5.78,5.76,5.66],
+        soloBbProb: [420.1,414.8,404.5,376.6,348.6,341.3],
+        cherryBbProb:[1356,1356,1356,1356,1337,1130],
+        soloRbProb: [655.4,595.8,496.5,404.5,390.1,327.7],
+        cherryRbProb:[1092.0,1092.0,1040.0,1024.0,862.0,762.0],
       },
       gojugg3: {
-        setting: [1, 2, 3, 4, 5, 6],
-        bbProb: [259.0, 258.0, 257.0, 254.0, 247.3, 234.9],
-        rbProb: [354.2, 332.7, 306.2, 268.6, 247.3, 234.9],
-        grapeProb: [6.25, 6.20, 6.15, 6.07, 5.99, 5.92],
-        soloBbProb:   [394.8, 392.4, 392.4, 387.8, 381.0, 364.1],
-        cherryBbProb: [1456.4, 1456.4, 1456.4, 1394.4, 1394.4, 1310.7],
-        soloRbProb:   [489.1, 452.0, 436.9, 381.0, 339.6, 327.7],
-        cherryRbProb: [1424.7, 1310.7, 1170.3, 1110.8, 1024.0, 936.2],
+        setting: [1,2,3,4,5,6],
+        bbProb: [259.0,258.0,257.0,254.0,247.3,234.9],
+        rbProb: [354.2,332.7,306.2,268.6,247.3,234.9],
+        grapeProb: [6.25,6.20,6.15,6.07,5.99,5.92],
+        soloBbProb: [394.8,392.4,392.4,387.8,381.0,364.1],
+        cherryBbProb:[1456.4,1456.4,1456.4,1394.4,1394.4,1310.7],
+        soloRbProb: [489.1,452.0,436.9,381.0,339.6,327.7],
+        cherryRbProb:[1424.7,1310.7,1170.3,1110.8,1024.0,936.2],
       },
       aim: {
-        setting: [1, 2, 3, 4, 5, 6],
-        bbProb: [273.1, 269.7, 269.7, 259.0, 259.0, 255.0],
-        rbProb: [439.8, 399.0, 331.0, 315.1, 255.0, 255.0],
-        grapeProb: [6.02, 6.02, 6.02, 6.02, 6.02, 5.78],
-        soloBbProb:   [389.0, 382.0, 382.0, 370.0, 370.0, 362],
-        cherryBbProb: [916.0, 920.0, 920.0, 863.0, 863.0, 864.0],
-        soloRbProb:   [630.0, 575.0, 475.0, 449.0, 364.0, 364.0],
-        cherryRbProb: [1456.0, 1311.0, 1092.0, 1057.0, 851.0, 851.0],
+        setting: [1,2,3,4,5,6],
+        bbProb: [273.1,269.7,269.7,259.0,259.0,255.0],
+        rbProb: [439.8,399.0,331.0,315.1,255.0,255.0],
+        grapeProb: [6.02,6.02,6.02,6.02,6.02,5.78],
+        soloBbProb: [389.0,382.0,382.0,370.0,370.0,362],
+        cherryBbProb:[916.0,920.0,920.0,863.0,863.0,864.0],
+        soloRbProb: [630.0,575.0,475.0,449.0,364.0,364.0],
+        cherryRbProb:[1456.0,1311.0,1092.0,1057.0,851.0,851.0],
       },
       happy: {
-        setting: [1, 2, 3, 4, 5, 6],
-        bbProb: [273.1, 270.8, 263.2, 254.0, 239.2, 226.0],
-        rbProb: [397.2, 362.1, 332.7, 300.6, 273.1, 256.0],
-        grapeProb: [6.04, 6.01, 5.98, 5.84, 5.81, 5.79],
-        soloBbProb:   [394.2, 387.8, 371.2, 379.4, 349.4, 323.6],
-        cherryBbProb: [1489.5, 1489.5, 1489.5, 1489.5, 1213.6, 1213.6],
-        soloRbProb:   [635.5, 561.9, 532.4, 473.7, 432.5, 426.6],
-        cherryRbProb: [1057.0, 993.0, 885.6, 809.1, 728.2, 642.5],
+        setting: [1,2,3,4,5,6],
+        bbProb: [273.1,270.8,263.2,254.0,239.2,226.0],
+        rbProb: [397.2,362.1,332.7,300.6,273.1,256.0],
+        grapeProb: [6.04,6.01,5.98,5.84,5.81,5.79],
+        soloBbProb: [394.2,387.8,371.2,379.4,349.4,323.6],
+        cherryBbProb:[1489.5,1489.5,1489.5,1489.5,1213.6,1213.6],
+        soloRbProb: [635.5,561.9,532.4,473.7,432.5,426.6],
+        cherryRbProb:[1057.0,993.0,885.6,809.1,728.2,642.5],
       },
       mister: {
-        setting: [1, 2, 3, 4, 5, 6],
-        bbProb: [268.5, 267.5, 260.0, 249.2, 240.9, 237.4],
-        rbProb: [374.5, 354.2, 330.9, 291.2, 257.0, 237.4],
-        grapeProb: [6.29, 6.22, 6.15, 6.09, 6.02, 5.96],
-        soloBbProb:   [354.2, 352.7, 341.7, 330.0, 320.2, 313.9],
-        cherryBbProb: [1688.5, 1681.6, 1655.1, 1508.3, 1410.0, 1385.4],
-        soloRbProb:   [517.5, 480.5, 447.2, 384.3, 329.4, 298.7],
-        cherryRbProb: [1620.7, 1599.8, 1503.3, 1411.8, 1357.1, 1331.1],
+        setting: [1,2,3,4,5,6],
+        bbProb: [268.5,267.5,260.0,249.2,240.9,237.4],
+        rbProb: [374.5,354.2,330.9,291.2,257.0,237.4],
+        grapeProb: [6.29,6.22,6.15,6.09,6.02,5.96],
+        soloBbProb: [354.2,352.7,341.7,330.0,320.2,313.9],
+        cherryBbProb:[1688.5,1681.6,1655.1,1508.3,1410.0,1385.4],
+        soloRbProb: [517.5,480.5,447.2,384.3,329.4,298.7],
+        cherryRbProb:[1620.7,1599.8,1503.3,1411.8,1357.1,1331.1],
       },
       ulmira: {
-        setting: [1, 2, 3, 4, 5, 6],
-        bbProb: [267.5, 261.1, 256.0, 242.7, 233.2, 216.3],
-        rbProb: [425.6, 402.1, 350.5, 322.8, 297.9, 277.7],
-        grapeProb: [5.93, 5.93, 5.93, 5.93, 5.87, 5.81],
-        soloBbProb:   [333.65, 333.32, 328.76, 310.66, 304.33, 281.78],
-        cherryBbProb: [1349.0, 1205.0, 1157.0, 1110.0, 998.0, 931.0],
-        soloRbProb:   [595.84, 545.71, 489.59, 436.46, 415.90, 379.91],
-        cherryRbProb: [1490.0, 1528.0, 1234.0, 1240.0, 1050.0, 1032.0],
+        setting: [1,2,3,4,5,6],
+        bbProb: [267.5,261.1,256.0,242.7,233.2,216.3],
+        rbProb: [425.6,402.1,350.5,322.8,297.9,277.7],
+        grapeProb: [5.93,5.93,5.93,5.93,5.87,5.81],
+        soloBbProb: [333.65,333.32,328.76,310.66,304.33,281.78],
+        cherryBbProb:[1349.0,1205.0,1157.0,1110.0,998.0,931.0],
+        soloRbProb: [595.84,545.71,489.59,436.46,415.90,379.91],
+        cherryRbProb:[1490.0,1528.0,1234.0,1240.0,1050.0,1032.0],
       },
       girls: {
-        setting: [1, 2, 3, 4, 5, 6],
-        bbProb: [273.1, 270.8, 260.0, 250.1, 243.6, 225.9],
-        rbProb: [381.0, 350.4, 316.6, 281.2, 270.8, 252.0],
-        grapeProb: [5.98, 5.98, 5.98, 5.98, 5.98, 5.83],
-        soloBbProb:   [389.5, 383.1, 371.5, 352.4, 340.0, 313.7],
-        cherryBbProb: [923.04, 936.23, 873.81, 873.81, 873.81, 819.20],
-        soloRbProb:   [523.8, 485.3, 440.1, 392.2, 385.2, 358.9],
-        cherryRbProb: [1424.70, 1285.02, 1149.75, 963.77, 923.04, 851.12],
+        setting: [1,2,3,4,5,6],
+        bbProb: [273.1,270.8,260.0,250.1,243.6,225.9],
+        rbProb: [381.0,350.4,316.6,281.2,270.8,252.0],
+        grapeProb: [5.98,5.98,5.98,5.98,5.98,5.83],
+        soloBbProb: [389.5,383.1,371.5,352.4,340.0,313.7],
+        cherryBbProb:[923.04,936.23,873.81,873.81,873.81,819.20],
+        soloRbProb: [523.8,485.3,440.1,392.2,385.2,358.9],
+        cherryRbProb:[1424.70,1285.02,1149.75,963.77,923.04,851.12],
       },
       funky: {
-        setting: [1, 2, 3, 4, 5, 6],
-        bbProb: [266.4, 259.0, 256.0, 249.2, 240.1, 219.1],
-        rbProb: [439.8, 407.1, 336.1, 322.8, 299.3, 262.1],
-        grapeProb: [5.94, 5.93, 5.88, 5.83, 5.75, 5.66],
-        soloBbProb:   [405.0, 397.0, 395.0, 383.0, 375.0, 334.0],
-        cherryBbProb: [1425.0, 1365.0, 1365.0, 1365.0, 1285.0, 1260.0],
-        soloRbProb:   [630.0, 585.0, 512.0, 449.0, 405.0, 352.0],
-        cherryRbProb: [1456.0, 1338.0, 1285.0, 1150.0, 1150.0, 1024.0],
+        setting: [1,2,3,4,5,6],
+        bbProb: [266.4,259.0,256.0,249.2,240.1,219.1],
+        rbProb: [439.8,407.1,336.1,322.8,299.3,262.1],
+        grapeProb: [5.94,5.93,5.88,5.83,5.75,5.66],
+        soloBbProb: [405.0,397.0,395.0,383.0,375.0,334.0],
+        cherryBbProb:[1425.0,1365.0,1365.0,1365.0,1285.0,1260.0],
+        soloRbProb: [630.0,585.0,512.0,449.0,405.0,352.0],
+        cherryRbProb:[1456.0,1338.0,1285.0,1150.0,1150.0,1024.0],
       },
     };
 
-    // 事前分布（導入率）
-    const prior = [0.22, 0.43, 0.22, 0.09, 0.03, 0.01];
+    // 事前分布
+    const prior = [0.22,0.43,0.22,0.09,0.03,0.01];
 
     // --- 数学ユーティリティ ---
-    function zScore(observed, expected, total) {
-      const p = 1 / expected;
-      const mean = total * p;
-      const sd = Math.sqrt(total * p * (1 - p));
-      return (observed - mean) / sd;
+    function zScore(obs, expected, total){
+      const p = 1/expected, mean = total*p, sd = Math.sqrt(total*p*(1-p));
+      return (obs - mean)/sd;
     }
-    function percentileFromZ(z) {
-      const erf = x => {
-        const sign = Math.sign(x);
-        x = Math.abs(x);
-        const t = 1 / (1 + 0.5 * x);
-        const tau = t * Math.exp(-x * x - 1.26551223 + t * (
-          1.00002368 + t * (
-            0.37409196 + t * (
-              0.09678418 + t * (
-                -0.18628806 + t * (
-                  0.27886807 + t * (
-                    -1.13520398 + t * (
-                      1.48851587 + t * (
-                        -0.82215223 + t * 0.17087277)))))))));
-        return sign * (1 - tau);
+    function percentileFromZ(z){
+      const erf = x=>{
+        const s=Math.sign(x); x=Math.abs(x);
+        const t=1/(1+0.5*x);
+        const tau=t*Math.exp(-x*x-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));
+        return s*(1-tau);
       };
-      return ((0.5 * (1 + erf(z / Math.SQRT2))) * 100);
+      return (0.5*(1+erf(z/Math.SQRT2)))*100;
     }
-    function formatPercent2(p) { return (Math.round(p * 10) / 10).toFixed(1); }
-    function formatPercent(p)  { return (Math.round(p * 1000) / 1000).toFixed(2); }
+    const fmt1 = p=> (Math.round(p*10)/10).toFixed(1);
+    const fmt2 = p=> (Math.round(p*1000)/1000).toFixed(2);
 
-    // --- 高設定定義 ---
-    function highSettingIndices(machineKey) {
-      if (machineKey === 'aim' || machineKey === 'gojugg3') return [4, 5];
-      return [3, 4, 5];
-    }
+    // 高設定定義
+    function highSettingIndices(key){ return (key==='aim'||key==='gojugg3') ? [4,5] : [3,4,5]; }
 
-    // --- 機種別重み ---
-    function deriveWeights(machineKey, g, grapeValid) {
-      if (machineKey === 'myjugg5') return { bb: 0.10, rb: 0.50, gassan: 0.40, grape: 0.00 };
-      if (machineKey === 'gojugg3') return { bb: 0.10, rb: 0.45, gassan: 0.45, grape: 0.00 };
-      if (machineKey === 'aim')     return { bb: 0.05, rb: 0.55, gassan: 0.40, grape: 0.00 };
-      // それ以外は従来可変
-      let rbWeight, gassanWeight, grapeWeight, bbWeight;
-      if (!grapeValid) {
-        rbWeight = 0.55; gassanWeight = 0.40; grapeWeight = 0.00; bbWeight = 0.05;
-      } else {
-        if (g <= 1000) { rbWeight = 0.30; gassanWeight = 0.50; }
-        else if (g >= 2500) { rbWeight = 0.55; gassanWeight = 0.25; }
-        else {
-          const ratio = (g - 1000) / 1500;
-          rbWeight = 0.30 + 0.25 * ratio;
-          gassanWeight = 0.50 - 0.25 * ratio;
-        }
-        grapeWeight = 0.15; bbWeight = 0.05;
+    // 機種別重み
+    function deriveWeights(key,g,grapeValid){
+      if (key==='myjugg5') return {bb:0.10, rb:0.50, gassan:0.40, grape:0.00};
+      if (key==='gojugg3') return {bb:0.10, rb:0.45, gassan:0.45, grape:0.00};
+      if (key==='aim')     return {bb:0.05, rb:0.55, gassan:0.40, grape:0.00};
+      let rbW,gW,grW,bbW;
+      if (!grapeValid){ rbW=0.55; gW=0.40; grW=0.00; bbW=0.05; }
+      else{
+        if (g<=1000){ rbW=0.30; gW=0.50; }
+        else if (g>=2500){ rbW=0.55; gW=0.25; }
+        else { const r=(g-1000)/1500; rbW=0.30+0.25*r; gW=0.50-0.25*r; }
+        grW=0.15; bbW=0.05;
       }
-      return { bb: bbWeight, rb: rbWeight, grape: grapeWeight, gassan: gassanWeight };
+      return {bb:bbW, rb:rbW, grape:grW, gassan:gW};
     }
 
-    // --- 尤度→事後（％）
-    function computeResult(machineKey, g, bbTotal, rbTotal, grape) {
-      const m = data[machineKey];
-      const grapeValid = (grape !== null) && (grape > 0);
-      const weights = deriveWeights(machineKey, g, grapeValid);
-
-      const rows = [];
-      let totalWeight = 0;
-
-      for (let i = 0; i < m.setting.length; i++) {
-        const bbZ = zScore(bbTotal, m.bbProb[i], g);
-        const rbZ = zScore(rbTotal, m.rbProb[i], g);
-        const grapeZ = grapeValid ? zScore(grape, m.grapeProb[i], g) : 0;
-        const gassanProb = 1 / ((1 / m.bbProb[i]) + (1 / m.rbProb[i]));
-        const gassanZ = zScore(bbTotal + rbTotal, gassanProb, g);
-
-        const weightedSum = weights.bb * bbZ**2
-                          + weights.rb * rbZ**2
-                          + weights.grape * grapeZ**2
-                          + weights.gassan * gassanZ**2;
-
-        const likelihood = Math.exp(-weightedSum);
-        const w = likelihood * prior[i];
-
+    // 尤度→事後
+    function computeResult(key,g,bbTotal,rbTotal,grape,bbCherryObs,rbCherryObs){
+      const m=data[key], grapeValid=(grape!==null)&&grape>0, w=deriveWeights(key,g,grapeValid);
+      const rows=[]; let tot=0;
+      for(let i=0;i<m.setting.length;i++){
+        const bbZ=zScore(bbTotal,m.bbProb[i],g);
+        const rbZ=zScore(rbTotal,m.rbProb[i],g);
+        const cherryBbZ=(bbCherryObs==null)?null:zScore(bbCherryObs,m.cherryBbProb[i],g);
+        const cherryRbZ=(rbCherryObs==null)?null:zScore(rbCherryObs,m.cherryRbProb[i],g);
+        const grapeZ=grapeValid?zScore(grape,m.grapeProb[i],g):0;
+        const gassanProb=1/((1/m.bbProb[i])+(1/m.rbProb[i]));
+        const gassanZ=zScore(bbTotal+rbTotal,gassanProb,g);
+        const weighted=w.bb*bbZ**2 + w.rb*rbZ**2 + w.grape*grapeZ**2 + w.gassan*gassanZ**2;
+        const like=Math.exp(-weighted);
+        const weight=like*prior[i];
         rows.push({
-          setting: m.setting[i],
-          bbZ, rbZ, gassanZ, grapeZ,
-          bbP: (100 - percentileFromZ(bbZ)),
-          rbP: (100 - percentileFromZ(rbZ)),
-          gassanP: (100 - percentileFromZ(gassanZ)),
-          grapeP: grapeValid ? (100 - percentileFromZ(grapeZ)) : null,
-          weight: w
+          setting:m.setting[i],
+          bbZ,rbZ,gassanZ,grapeZ,
+          bbP:(100-percentileFromZ(bbZ)),
+          rbP:(100-percentileFromZ(rbZ)),
+          gassanP:(100-percentileFromZ(gassanZ)),
+          grapeP: grapeValid?(100-percentileFromZ(grapeZ)):null,
+          cherryBbZ, cherryBbP: (cherryBbZ==null)?null:(100-percentileFromZ(cherryBbZ)),
+          cherryRbZ, cherryRbP: (cherryRbZ==null)?null:(100-percentileFromZ(cherryRbZ)),
+          weight
         });
-        totalWeight += w;
+        tot+=weight;
       }
-
-      rows.forEach(r => r.percentage = (r.weight / totalWeight) * 100);
-
-      const hiIdx = highSettingIndices(machineKey);
-      const sumHigh = hiIdx.reduce((s, idx) => s + rows[idx].percentage, 0);
-
-      return { rows, sumHigh };
+      rows.forEach(r=> r.percentage = (r.weight/tot)*100 );
+      const hiIdx=highSettingIndices(key);
+      const sumHigh=hiIdx.reduce((s,idx)=>s+rows[idx].percentage,0);
+      return {rows, sumHigh};
+    }
+    function computeSumHigh(key,g,bbTotal,rbTotal,grape){
+      return computeResult(key,g,bbTotal,rbTotal,grape,null,null).sumHigh;
     }
 
-    function computeSumHigh(machineKey, g, bbTotal, rbTotal, grape) {
-      return computeResult(machineKey, g, bbTotal, rbTotal, grape).sumHigh;
+    // 閾値探索・BB判定
+    function spinsUntilDropBelow(key,g,bbTotal,rbTotal,grape,th,max=5000){
+      for(let add=0;add<=max;add++){ if (computeSumHigh(key,g+add,bbTotal,rbTotal,grape)<th) return add; }
+      return null;
     }
-
-    // --- 既存の探索群（RB 300/600 対応、BB z>=0 判定） ---
-    function spinsUntilDropBelow(machineKey, g, bbTotal, rbTotal, grape, threshold, maxSpins = 5000) {
-      for (let add = 0; add <= maxSpins; add++) {
-        const s = computeSumHigh(machineKey, g + add, bbTotal, rbTotal, grape);
-        if (s < threshold) return add;
+    function rbNeededWithin(key,g,bbTotal,rbTotal,grape,th,win){
+      const g2=g+win;
+      for(let need=0;need<=win;need++){
+        if (computeSumHigh(key,g2,bbTotal,rbTotal+need,grape)>=th) return need;
       }
       return null;
     }
-    function rbNeededWithin(machineKey, g, bbTotal, rbTotal, grape, threshold, windowG) {
-      const g2 = g + windowG;
-      for (let need = 0; need <= windowG; need++) {
-        const s = computeSumHigh(machineKey, g2, bbTotal, rbTotal + need, grape);
-        if (s >= threshold) return need;
-      }
+    function bbNeededForZNonNegativeWithin(key,g,bbTotal,win){
+      const exp=data[key].bbProb[5], total=g+win;
+      for(let need=0;need<=win;need++){ if (zScore(bbTotal+need,exp,total)>=0) return need; }
       return null;
     }
-    function bbNeededForZNonNegativeWithin(machineKey, g, bbTotal, windowG) {
-      const m = data[machineKey];
-      const exp = m.bbProb[5]; // 設定6のBB期待値
-      const totalAfter = g + windowG;
-      for (let need = 0; need <= windowG; need++) {
-        const z = zScore(bbTotal + need, exp, totalAfter);
-        if (z >= 0) return need;
-      }
-      return null;
-    }
-    function bbNoHitSpinsUntilZBelow0(machineKey, g, bbTotal, maxSpins = 5000) {
-      const m = data[machineKey];
-      const exp = m.bbProb[5];
-      if (zScore(bbTotal, exp, g) < 0) return 0;
-      for (let add = 1; add <= maxSpins; add++) {
-        const z = zScore(bbTotal, exp, g + add);
-        if (z < 0) return add;
-      }
+    function bbNoHitSpinsUntilZBelow0(key,g,bbTotal,max=5000){
+      const exp=data[key].bbProb[5];
+      if (zScore(bbTotal,exp,g)<0) return 0;
+      for(let add=1;add<=max;add++){ if (zScore(bbTotal,exp,g+add)<0) return add; }
       return null;
     }
 
-    // --- 内訳表（ひな形）
-    function renderBreakdownTable(machineKey) {
-      const m = data[machineKey];
-      const header = ['設定', '1', '2', '3', '4', '5', '6'];
-      const fmt = arr => arr.map(v => (v && Number.isFinite(v) ? `1/${v}` : '-'));
-      const rows = [
-        ['単独BB',  ...fmt(m.soloBbProb)],
-        ['チェリー重複BB', ...fmt(m.cherryBbProb)],
-        ['単独RB',  ...fmt(m.soloRbProb)],
-        ['チェリー重複RB', ...fmt(m.cherryRbProb)],
+    // 内訳表
+    function renderBreakdownTable(key){
+      const m=data[key], header=['設定','1','2','3','4','5','6'];
+      const fmt=a=>a.map(v=>(v&&Number.isFinite(v))?`1/${v}`:'-');
+      const rows=[
+        ['単独BB',...fmt(m.soloBbProb)],
+        ['チェリー重複BB',...fmt(m.cherryBbProb)],
+        ['単独RB',...fmt(m.soloRbProb)],
+        ['チェリー重複RB',...fmt(m.cherryRbProb)],
       ];
-      let html = '<div class="summary"><h3>内訳確率（ひな形）</h3>';
-      html += '<table><thead><tr>' + header.map(h=>`<th>${h}</th>`).join('') + '</tr></thead><tbody>';
-      for (const r of rows) {
-        html += '<tr>' + r.map((c,i)=> i===0? `<th>${c}</th>` : `<td>${c}</td>`).join('') + '</tr>';
-      }
-      html += '</tbody></table>';
-      html += '<div class="note">※チェリー内訳を未入力の場合、単独欄は「合算」として扱われます。</div>';
-      html += '</div>';
+      let html='<div class="summary"><h3>内訳確率（ひな形）</h3>';
+      html+='<table><thead><tr>'+header.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>';
+      for(const r of rows){ html+='<tr>'+r.map((c,i)=> i===0?`<th>${c}</th>`:`<td>${c}</td>`).join('')+'</tr>'; }
+      html+='</tbody></table><div class="note">※チェリー未入力時は単独欄を「合算」と見做します。</div></div>';
       return html;
     }
 
+    // 設定診断：zの言語化
+    function labelFromZ(z){
+      if (z>=1.0) return `引き強（+${fmt2(z)}σ）`;
+      if (z>=0.5) return `やや引き強（+${fmt2(z)}σ）`;
+      if (z>-0.5) return `平均域（${fmt2(z)}σ）`;
+      if (z>-1.0) return `やや引き弱（${fmt2(z)}σ）`;
+      return `引き弱（${fmt2(z)}σ）`;
+    }
+
+    // 確信度（エントロピー／Gini）
+    function certaintyMetrics(rows){
+      const ps=rows.map(r=>r.percentage/100);
+      const H = -ps.reduce((s,p)=> s+(p>0?p*Math.log(p):0),0);
+      const Hmax=Math.log(ps.length);
+      const Hnorm= (Hmax===0)?0 : (1 - H/Hmax); // 0=不確実,1=確実
+      const gini=1-ps.reduce((s,p)=>s+p*p,0); // 0=確実, 最大=不確実
+      return {Hnorm, gini};
+    }
+
+    // 棒グラフ描画（事後分布）
+    function renderPosteriorChart(canvas, rows){
+      const ctx=canvas.getContext('2d');
+      const w=canvas.width=canvas.clientWidth, h=canvas.height=240;
+      ctx.clearRect(0,0,w,h);
+      const padding=40, barGap=14;
+      const labels=rows.map(r=>`${r.setting}`);
+      const vals=rows.map(r=>r.percentage);
+      const maxVal=Math.max(100, ...vals);
+      const n=vals.length;
+      const plotW=w-padding*2, plotH=h-padding*2;
+      const barW=(plotW - barGap*(n-1))/n;
+
+      // axes
+      ctx.strokeStyle='#999'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(padding,h-padding); ctx.lineTo(w-padding,h-padding); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(padding,padding); ctx.lineTo(padding,h-padding); ctx.stroke();
+      // y ticks
+      ctx.fillStyle='#666'; ctx.font='12px sans-serif';
+      for (let y=0;y<=100;y+=25){
+        const yy=h-padding - (y/maxVal)*plotH;
+        ctx.fillText(`${y}%`, 4, yy+4);
+        ctx.strokeStyle='#eee'; ctx.beginPath(); ctx.moveTo(padding,yy); ctx.lineTo(w-padding,yy); ctx.stroke();
+      }
+      // bars
+      for(let i=0;i<n;i++){
+        const x=padding + i*(barW+barGap);
+        const bh=(vals[i]/maxVal)*plotH;
+        const y=h-padding-bh;
+        ctx.fillStyle='#88aaff';
+        ctx.fillRect(x,y,barW,bh);
+        ctx.fillStyle='#333';
+        ctx.fillText(labels[i], x+barW/2-6, h-padding+14);
+        ctx.fillText(`${fmt1(vals[i])}%`, x+barW/2-18, y-4);
+      }
+    }
+
+    // 言語化サマリー（上位K設定）
+    function verbalDiagnosis(key, rows, topK=3){
+      const sorted=[...rows].sort((a,b)=>b.percentage-a.percentage).slice(0,topK);
+      const lines=sorted.map(r=>{
+        const parts=[`設定${r.setting}仮定：`,
+          `BB ${labelFromZ(r.bbZ)}`,
+          `／RB ${labelFromZ(r.rbZ)}`,
+          `／合算 ${labelFromZ(r.gassanZ)}`];
+        if (r.cherryBbZ!=null) parts.push(`／Ch.BB ${labelFromZ(r.cherryBbZ)}`);
+        if (r.cherryRbZ!=null) parts.push(`／Ch.RB ${labelFromZ(r.cherryRbZ)}`);
+        return `・${parts.join(' ')}`;
+      });
+      // ヒューリスティック総評
+      const {Hnorm,gini}=certaintyMetrics(rows);
+      const top=sorted[0];
+      let stance;
+      if (top.percentage>=60 && Hnorm>=0.5) stance=`「設定${top.setting}最有力」`;
+      else if (top.percentage>=35) stance=`「設定${top.setting}優位だが競合あり」`;
+      else stance=`「複数設定が拮抗」`;
+
+      // 例示的な“設定4の引き強があり得る”検出（上位に4がいて合算z>0）
+      const s4=rows.find(r=>r.setting===4);
+      const s5=rows.find(r=>r.setting===5);
+      const hints=[];
+      if (s4 && s4.percentage>=15 && s4.gassanZ>0.3){ hints.push('設定4の引き強シナリオが射程'); }
+      if (s5 && Math.abs(s5.gassanZ)<0.4 && s5.percentage>=20){ hints.push('設定5の平均域挙動と整合'); }
+      const hintLine = hints.length ? `補足：${hints.join(' ／ ')}。` : '';
+
+      return {
+        text: `【総評】${stance}（確信度 H*=${fmt1(Hnorm*100)}%・Gini=${fmt2(gini)}）。\n${lines.join('\n')}\n${hintLine}`.trim()
+      };
+    }
+
     // --- 画面更新 ---
-    function calculate() {
-      const machine = document.getElementById("machine").value;
+    function calculate(){
+      const key=document.getElementById('machine').value;
+      const g=parseInt(document.getElementById('games').value||'NaN');
+      const bbSolo  = valOrNull('bb_solo');
+      const bbCherry= valOrNull('bb_cherry');
+      const rbSolo  = valOrNull('rb_solo');
+      const rbCherry= valOrNull('rb_cherry');
+      const grape   = valOrNull('grape');
 
-      const gStr = document.getElementById("games").value;
-      const g = gStr === "" ? NaN : parseInt(gStr);
-
-      // 入力の読み込み（空欄は null）
-      const bbSoloStr   = document.getElementById("bb_solo").value;
-      const bbCherryStr = document.getElementById("bb_cherry").value;
-      const rbSoloStr   = document.getElementById("rb_solo").value;
-      const rbCherryStr = document.getElementById("rb_cherry").value;
-      const grapeStr    = document.getElementById("grape").value;
-
-      const bbSolo   = bbSoloStr === "" ? null : parseInt(bbSoloStr);
-      const bbCherry = bbCherryStr === "" ? null : parseInt(bbCherryStr);
-      const rbSolo   = rbSoloStr === "" ? null : parseInt(rbSoloStr);
-      const rbCherry = rbCherryStr === "" ? null : parseInt(rbCherryStr);
-      const grape    = grapeStr  === "" ? null : parseInt(grapeStr);
-
-      if (!Number.isFinite(g) || g <= 0) {
-        document.getElementById("output").innerHTML = "<p>回転数（G数）を入力してください。</p>";
+      if (!Number.isFinite(g) || g<=0){
+        document.getElementById('output').innerHTML='<p>回転数（G数）を入力してください。</p>';
         return;
       }
 
-      // 合算化ルール：
-      // ・チェリー欄が空欄なら、単独欄は「合算」とみなして総回数に採用
-      // ・チェリー欄が数値なら、総回数 = （単独||0） + チェリー
-      let bbTotal, rbTotal;
+      // 合算化
+      const bbTotal = (bbCherry==null) ? ((bbSolo==null)?0:bbSolo) : ((bbSolo||0)+bbCherry);
+      const rbTotal = (rbCherry==null) ? ((rbSolo==null)?0:rbSolo) : ((rbSolo||0)+rbCherry);
 
-      if (bbCherry === null) {
-        bbTotal = (bbSolo === null) ? 0 : bbSolo; // 単独=合算扱い
-      } else {
-        bbTotal = (bbSolo || 0) + bbCherry;
-      }
+      const {rows,sumHigh}=computeResult(key,g,bbTotal,rbTotal,grape,bbCherry,rbCherry);
 
-      if (rbCherry === null) {
-        rbTotal = (rbSolo === null) ? 0 : rbSolo; // 単独=合算扱い
-      } else {
-        rbTotal = (rbSolo || 0) + rbCherry;
-      }
+      // 表
+      let html = '<div class="chart-wrap"><canvas id="postChart"></canvas></div>';
+      html += '<div class="summary diagnosis"><h3>自動診断（事後分布の言語化）</h3><pre id="diag" style="white-space:pre-wrap;"></pre></div>';
 
-      const { rows, sumHigh } = computeResult(machine, g, bbTotal, rbTotal, grape);
-
-      // 結果テーブル（出力は合算ベースのBB/RB）
-      let html = '<table class="result-table" border="1"><tr>' +
-                 '<th>設定</th>' +
-                 '<th>BB Z</th><th>BB%</th>' +
-                 '<th>RB Z</th><th>RB%</th>' +
-                 '<th>ボナ合算 Z<br><small>(BB+RB)</small></th>' +
-                 '<th>ボナ合算%</th>' +
-                 '<th>ブドウ Z</th><th>ブドウ%</th>' +
-                 '<th>推定確率</th>' +
-                 '</tr>';
-      rows.forEach((r) => {
+      html += '<table class="result-table" border="1"><tr>'+
+              '<th>設定</th>'+
+              '<th>BB Z</th><th>BB%</th>'+
+              '<th>Cherry BB Z</th><th>Cherry BB%</th>'+
+              '<th>RB Z</th><th>RB%</th>'+
+              '<th>Cherry RB Z</th><th>Cherry RB%</th>'+
+              '<th>ボナ合算 Z<br><small>(BB+RB)</small></th>'+
+              '<th>ボナ合算%</th>'+
+              '<th>ブドウ Z</th><th>ブドウ%</th>'+
+              '<th>推定確率</th></tr>';
+      rows.forEach(r=>{
+        const chBBZ = r.cherryBbZ==null?'-':r.cherryBbZ.toFixed(2);
+        const chBBP = r.cherryBbP==null?'-':`${fmt2(r.cherryBbP)}%`;
+        const chRBZ = r.cherryRbZ==null?'-':r.cherryRbZ.toFixed(2);
+        const chRBP = r.cherryRbP==null?'-':`${fmt2(r.cherryRbP)}%`;
         html += `<tr>
           <td>${r.setting}</td>
-          <td>${r.bbZ.toFixed(2)}</td>
-          <td>${formatPercent(r.bbP)}%</td>
-          <td>${r.rbZ.toFixed(2)}</td>
-          <td>${formatPercent(r.rbP)}%</td>
-          <td>${r.gassanZ.toFixed(2)}</td>
-          <td>${formatPercent(r.gassanP)}%</td>
-          <td>${r.grapeP === null ? '-' : r.grapeZ.toFixed(2)}</td>
-          <td>${r.grapeP === null ? '-' : formatPercent(r.grapeP) + '%'}</td>
+          <td>${r.bbZ.toFixed(2)}</td><td>${fmt2(r.bbP)}%</td>
+          <td>${chBBZ}</td><td>${chBBP}</td>
+          <td>${r.rbZ.toFixed(2)}</td><td>${fmt2(r.rbP)}%</td>
+          <td>${chRBZ}</td><td>${chRBP}</td>
+          <td>${r.gassanZ.toFixed(2)}</td><td>${fmt2(r.gassanP)}%</td>
+          <td>${r.grapeP===null?'-':r.grapeZ.toFixed(2)}</td>
+          <td>${r.grapeP===null?'-':fmt2(r.grapeP)+'%'}</td>
           <td>${(r.percentage).toFixed(1)}%</td>
         </tr>`;
       });
       html += '</table>';
 
-      // 高設定合算まとめ
-      const hiLabel = (machine === 'aim' || machine === 'gojugg3') ? '（設定5・6）' : '（設定4～6）';
-
-      // RBしきい値（300/600）
-      const thresholds = [75, 50, 30];
-      let rowsExtraTop = '';
-      let rowsExtraNeed = '';
-      thresholds.forEach(th => {
-        if (sumHigh >= th) {
-          const addG = spinsUntilDropBelow(machine, g, bbTotal, rbTotal, grape, th, 5000);
-          const display = (addG === null) ? '&gt;5000G' : (addG + 'G');
-          rowsExtraTop += `<tr><td>${th}%</td><td>RB不発で閾値割れまで</td><td colspan="2">${display}</td></tr>`;
-        } else {
-          const need300 = rbNeededWithin(machine, g, bbTotal, rbTotal, grape, th, 300);
-          const need600 = rbNeededWithin(machine, g, bbTotal, rbTotal, grape, th, 600);
-          const d300 = (need300 === null) ? '到達不可' : `${need300} 回`;
-          const d600 = (need600 === null) ? '到達不可' : `${need600} 回`;
-          rowsExtraNeed += `<tr><td>${th}%</td><td>再到達に必要RB</td><td>${d300}（/300G）</td><td>${d600}（/600G）</td></tr>`;
+      // 高設定合算まとめ（RB 300/600）
+      const hiLabel=(key==='aim'||key==='gojugg3')?'（設定5・6）':'（設定4～6）';
+      const thresholds=[75,50,30];
+      let rowsTop='', rowsNeed='';
+      thresholds.forEach(th=>{
+        if (sumHigh>=th){
+          const add=spinsUntilDropBelow(key,g,bbTotal,rbTotal,grape,th,5000);
+          rowsTop += `<tr><td>${th}%</td><td>RB不発で閾値割れまで</td><td colspan="2">${add===null?'&gt;5000G':add+'G'}</td></tr>`;
+        }else{
+          const n300=rbNeededWithin(key,g,bbTotal,rbTotal,grape,th,300);
+          const n600=rbNeededWithin(key,g,bbTotal,rbTotal,grape,th,600);
+          rowsNeed += `<tr><td>${th}%</td><td>再到達に必要RB</td><td>${n300==null?'到達不可':n300+' 回'}（/300G）</td><td>${n600==null?'到達不可':n600+' 回'}（/600G）</td></tr>`;
         }
       });
-
-      const extra = `
+      html += `
         <div class="summary">
           <h3>高設定合算${hiLabel} の推定合計</h3>
-          <p><strong>${formatPercent2(sumHigh)}%</strong></p>
+          <p><strong>${fmt1(sumHigh)}%</strong></p>
           <table>
             <tr><th>閾値</th><th>評価項目</th><th>300G</th><th>600G</th></tr>
-            ${rowsExtraTop}
-            ${rowsExtraNeed}
+            ${rowsTop}${rowsNeed}
           </table>
-          <div class="note">
-            ※RBの再到達判定は、指定ウィンドウ内でRBを可変とし、BB/ブドウは固定したまま総回転数のみ加算して評価。<br>
-            ※現在閾値以上の行は「RB不発で何Gまで持つか」、未満の行は「300G/600Gで再到達に要するRB回数」を表示。<br>
-            ※入力ルール：チェリー欄が空欄の場合、単独欄は「合算」として扱われます。
-          </div>
-        </div>
-      `;
+        </div>`;
 
-      // BB（設定6仮定 z≥0）ブロック
-      const bbNeed300 = bbNeededForZNonNegativeWithin(machine, g, bbTotal, 300);
-      const bbNeed600 = bbNeededForZNonNegativeWithin(machine, g, bbTotal, 600);
-      const bbFall300 = bbNoHitSpinsUntilZBelow0(machine, g, bbTotal, 300);
-      const bbFall600 = bbNoHitSpinsUntilZBelow0(machine, g, bbTotal, 600);
-
-      const bbBlock = `
+      // BB（設定6仮定 z≥0）
+      const bbNeed300=bbNeededForZNonNegativeWithin(key,g,bbTotal,300);
+      const bbNeed600=bbNeededForZNonNegativeWithin(key,g,bbTotal,600);
+      const bbFall300=bbNoHitSpinsUntilZBelow0(key,g,bbTotal,300);
+      const bbFall600=bbNoHitSpinsUntilZBelow0(key,g,bbTotal,600);
+      html += `
         <div class="summary">
           <h3>BBの「設定6仮定で z≥0」到達・維持条件</h3>
           <table>
             <tr><th></th><th>300G内</th><th>600G内</th></tr>
-            <tr>
-              <td>到達に必要なBB回数（最小）</td>
-              <td>${bbNeed300 === null ? '到達不可' : `${bbNeed300} 回`}</td>
-              <td>${bbNeed600 === null ? '到達不可' : `${bbNeed600} 回`}</td>
-            </tr>
-            <tr>
-              <td>BBゼロ継続で z&lt;0 になるまで</td>
-              <td>${bbFall300 === null ? '&gt;300G' : `${bbFall300} G`}</td>
-              <td>${bbFall600 === null ? '&gt;600G' : `${bbFall600} G`}</td>
-            </tr>
+            <tr><td>到達に必要なBB回数（最小）</td><td>${bbNeed300==null?'到達不可':bbNeed300+' 回'}</td><td>${bbNeed600==null?'到達不可':bbNeed600+' 回'}</td></tr>
+            <tr><td>BBゼロ継続で z&lt;0 になるまで</td><td>${bbFall300==null?'&gt;300G':bbFall300+' G'}</td><td>${bbFall600==null?'&gt;600G':bbFall600+' G'}</td></tr>
           </table>
-        </div>
-      `;
+        </div>`;
 
       // 重み注記
-      const weightNote = (() => {
-        if (machine === 'myjugg5') return '重み：BB10% / RB50% / ボナ合算40%（ブドウ0%）';
-        if (machine === 'gojugg3') return '重み：BB10% / RB45% / ボナ合算45%（ブドウ0%）';
-        if (machine === 'aim')     return '重み：BB5% / RB55% / ボナ合算40%（ブドウ0%）';
-        return '重み：従来ロジック（ブドウ入力時は最大15%、回転数でRBと合算の比率が可変）';
-      })();
+      const note = (key==='myjugg5')?'重み：BB10% / RB50% / ボナ合算40%（ブドウ0%）'
+                : (key==='gojugg3')?'重み：BB10% / RB45% / ボナ合算45%（ブドウ0%）'
+                : (key==='aim')    ?'重み：BB5% / RB55% / ボナ合算40%（ブドウ0%）'
+                : '重み：従来ロジック（ブドウ入力時は最大15%、回転数でRBと合算比率が可変）';
+      html += `<div class="summary"><h3>評価重みの注記</h3><p>${note}</p></div>`;
 
-      const info = `
-        <div class="summary">
-          <h3>評価重みの注記</h3>
-          <p>${weightNote}</p>
-        </div>
-      `;
+      // 内訳
+      html += renderBreakdownTable(key);
 
-      const breakdown = renderBreakdownTable(machine);
+      document.getElementById('output').innerHTML=html;
 
-      document.getElementById("output").innerHTML = html + extra + bbBlock + info + breakdown;
+      // グラフ描画と診断テキスト
+      const canvas=document.getElementById('postChart');
+      renderPosteriorChart(canvas, rows);
+      const diag=verbalDiagnosis(key, rows, 3);
+      document.getElementById('diag').textContent = diag.text;
+
+      function valOrNull(id){
+        const v=document.getElementById(id).value;
+        return v===''?null:parseInt(v);
+      }
     }
   </script>
 </body>
