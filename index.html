@@ -9,16 +9,18 @@
     label, select, input { display: block; margin: 10px 0; }
     .inline { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     .inline label { margin: 0; }
-    .result { margin-top: 20px; overflow-x: auto; }
-    .result-table td, .result-table th { padding: 4px 8px; white-space: nowrap; }
+    .result { margin-top: 20px; }
     .summary { margin-top: 16px; padding: 12px; background:#f7f7f7; border:1px solid #ddd; }
     .summary h3 { margin: 0 0 8px 0; font-size: 1.05rem; }
     .summary table { border-collapse: collapse; width: 100%; }
     .summary td, .summary th { padding: 6px 8px; border: 1px solid #ccc; text-align: center; }
     .note { font-size: 0.9rem; color:#444; margin-top:8px; }
-    .diagnosis { margin-top: 12px; line-height: 1.6; }
     .chart-wrap { margin-top: 12px; }
     canvas { max-width: 700px; width: 100%; height: 240px; border:1px solid #ddd; background:#fff; }
+    .block-title { margin: 18px 0 6px; font-weight: bold; }
+    .result-table { width: 100%; border-collapse: collapse; }
+    .result-table th, .result-table td { padding: 6px 8px; border: 1px solid #ccc; white-space: nowrap; }
+    pre { white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -56,89 +58,89 @@
     // --- 基礎データ ---
     const data = {
       myjugg5: {
-        setting: [1,2,3,4,5,6],
-        bbProb: [273.1,270.8,266.4,254.0,240.1,229.1],
-        rbProb: [409.6,385.5,336.1,290.0,268.6,229.1],
-        grapeProb: [5.90,5.85,5.80,5.78,5.76,5.66],
-        soloBbProb: [420.1,414.8,404.5,376.6,348.6,341.3],
-        cherryBbProb:[1356,1356,1356,1356,1337,1130],
-        soloRbProb: [655.4,595.8,496.5,404.5,390.1,327.7],
-        cherryRbProb:[1092.0,1092.0,1040.0,1024.0,862.0,762.0],
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [273.1, 270.8, 266.4, 254.0, 240.1, 229.1],
+        rbProb: [409.6, 385.5, 336.1, 290.0, 268.6, 229.1],
+        grapeProb: [5.90, 5.85, 5.80, 5.78, 5.76, 5.66],
+        soloBbProb:   [420.1, 414.8, 404.5, 376.6, 348.6, 341.3],
+        cherryBbProb: [1356, 1356, 1356, 1356, 1337, 1130],
+        soloRbProb:   [655.4, 595.8, 496.5, 404.5, 390.1, 327.7],
+        cherryRbProb: [1092.0, 1092.0, 1040.0, 1024.0, 862.0, 762.0],
       },
       gojugg3: {
-        setting: [1,2,3,4,5,6],
-        bbProb: [259.0,258.0,257.0,254.0,247.3,234.9],
-        rbProb: [354.2,332.7,306.2,268.6,247.3,234.9],
-        grapeProb: [6.25,6.20,6.15,6.07,5.99,5.92],
-        soloBbProb: [394.8,392.4,392.4,387.8,381.0,364.1],
-        cherryBbProb:[1456.4,1456.4,1456.4,1394.4,1394.4,1310.7],
-        soloRbProb: [489.1,452.0,436.9,381.0,339.6,327.7],
-        cherryRbProb:[1424.7,1310.7,1170.3,1110.8,1024.0,936.2],
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [259.0, 258.0, 257.0, 254.0, 247.3, 234.9],
+        rbProb: [354.2, 332.7, 306.2, 268.6, 247.3, 234.9],
+        grapeProb: [6.25, 6.20, 6.15, 6.07, 5.99, 5.92],
+        soloBbProb:   [394.8, 392.4, 392.4, 387.8, 381.0, 364.1],
+        cherryBbProb: [1456.4, 1456.4, 1456.4, 1394.4, 1394.4, 1310.7],
+        soloRbProb:   [489.1, 452.0, 436.9, 381.0, 339.6, 327.7],
+        cherryRbProb: [1424.7, 1310.7, 1170.3, 1110.8, 1024.0, 936.2],
       },
       aim: {
-        setting: [1,2,3,4,5,6],
-        bbProb: [273.1,269.7,269.7,259.0,259.0,255.0],
-        rbProb: [439.8,399.0,331.0,315.1,255.0,255.0],
-        grapeProb: [6.02,6.02,6.02,6.02,6.02,5.78],
-        soloBbProb: [389.0,382.0,382.0,370.0,370.0,362],
-        cherryBbProb:[916.0,920.0,920.0,863.0,863.0,864.0],
-        soloRbProb: [630.0,575.0,475.0,449.0,364.0,364.0],
-        cherryRbProb:[1456.0,1311.0,1092.0,1057.0,851.0,851.0],
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [273.1, 269.7, 269.7, 259.0, 259.0, 255.0],
+        rbProb: [439.8, 399.0, 331.0, 315.1, 255.0, 255.0],
+        grapeProb: [6.02, 6.02, 6.02, 6.02, 6.02, 5.78],
+        soloBbProb:   [389.0, 382.0, 382.0, 370.0, 370.0, 362],
+        cherryBbProb: [916.0, 920.0, 920.0, 863.0, 863.0, 864.0],
+        soloRbProb:   [630.0, 575.0, 475.0, 449.0, 364.0, 364.0],
+        cherryRbProb: [1456.0, 1311.0, 1092.0, 1057.0, 851.0, 851.0],
       },
       happy: {
-        setting: [1,2,3,4,5,6],
-        bbProb: [273.1,270.8,263.2,254.0,239.2,226.0],
-        rbProb: [397.2,362.1,332.7,300.6,273.1,256.0],
-        grapeProb: [6.04,6.01,5.98,5.84,5.81,5.79],
-        soloBbProb: [394.2,387.8,371.2,379.4,349.4,323.6],
-        cherryBbProb:[1489.5,1489.5,1489.5,1489.5,1213.6,1213.6],
-        soloRbProb: [635.5,561.9,532.4,473.7,432.5,426.6],
-        cherryRbProb:[1057.0,993.0,885.6,809.1,728.2,642.5],
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [273.1, 270.8, 263.2, 254.0, 239.2, 226.0],
+        rbProb: [397.2, 362.1, 332.7, 300.6, 273.1, 256.0],
+        grapeProb: [6.04, 6.01, 5.98, 5.84, 5.81, 5.79],
+        soloBbProb:   [394.2, 387.8, 371.2, 379.4, 349.4, 323.6],
+        cherryBbProb: [1489.5, 1489.5, 1489.5, 1489.5, 1213.6, 1213.6],
+        soloRbProb:   [635.5, 561.9, 532.4, 473.7, 432.5, 426.6],
+        cherryRbProb: [1057.0, 993.0, 885.6, 809.1, 728.2, 642.5],
       },
       mister: {
-        setting: [1,2,3,4,5,6],
-        bbProb: [268.5,267.5,260.0,249.2,240.9,237.4],
-        rbProb: [374.5,354.2,330.9,291.2,257.0,237.4],
-        grapeProb: [6.29,6.22,6.15,6.09,6.02,5.96],
-        soloBbProb: [354.2,352.7,341.7,330.0,320.2,313.9],
-        cherryBbProb:[1688.5,1681.6,1655.1,1508.3,1410.0,1385.4],
-        soloRbProb: [517.5,480.5,447.2,384.3,329.4,298.7],
-        cherryRbProb:[1620.7,1599.8,1503.3,1411.8,1357.1,1331.1],
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [268.5, 267.5, 260.0, 249.2, 240.9, 237.4],
+        rbProb: [374.5, 354.2, 330.9, 291.2, 257.0, 237.4],
+        grapeProb: [6.29, 6.22, 6.15, 6.09, 6.02, 5.96],
+        soloBbProb:   [354.2, 352.7, 341.7, 330.0, 320.2, 313.9],
+        cherryBbProb: [1688.5, 1681.6, 1655.1, 1508.3, 1410.0, 1385.4],
+        soloRbProb:   [517.5, 480.5, 447.2, 384.3, 329.4, 298.7],
+        cherryRbProb: [1620.7, 1599.8, 1503.3, 1411.8, 1357.1, 1331.1],
       },
       ulmira: {
-        setting: [1,2,3,4,5,6],
-        bbProb: [267.5,261.1,256.0,242.7,233.2,216.3],
-        rbProb: [425.6,402.1,350.5,322.8,297.9,277.7],
-        grapeProb: [5.93,5.93,5.93,5.93,5.87,5.81],
-        soloBbProb: [333.65,333.32,328.76,310.66,304.33,281.78],
-        cherryBbProb:[1349.0,1205.0,1157.0,1110.0,998.0,931.0],
-        soloRbProb: [595.84,545.71,489.59,436.46,415.90,379.91],
-        cherryRbProb:[1490.0,1528.0,1234.0,1240.0,1050.0,1032.0],
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [267.5, 261.1, 256.0, 242.7, 233.2, 216.3],
+        rbProb: [425.6, 402.1, 350.5, 322.8, 297.9, 277.7],
+        grapeProb: [5.93, 5.93, 5.93, 5.93, 5.87, 5.81],
+        soloBbProb:   [333.65, 333.32, 328.76, 310.66, 304.33, 281.78],
+        cherryBbProb: [1349.0, 1205.0, 1157.0, 1110.0, 998.0, 931.0],
+        soloRbProb:   [595.84, 545.71, 489.59, 436.46, 415.90, 379.91],
+        cherryRbProb: [1490.0, 1528.0, 1234.0, 1240.0, 1050.0, 1032.0],
       },
       girls: {
-        setting: [1,2,3,4,5,6],
-        bbProb: [273.1,270.8,260.0,250.1,243.6,225.9],
-        rbProb: [381.0,350.4,316.6,281.2,270.8,252.0],
-        grapeProb: [5.98,5.98,5.98,5.98,5.98,5.83],
-        soloBbProb: [389.5,383.1,371.5,352.4,340.0,313.7],
-        cherryBbProb:[923.04,936.23,873.81,873.81,873.81,819.20],
-        soloRbProb: [523.8,485.3,440.1,392.2,385.2,358.9],
-        cherryRbProb:[1424.70,1285.02,1149.75,963.77,923.04,851.12],
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [273.1, 270.8, 260.0, 250.1, 243.6, 225.9],
+        rbProb: [381.0, 350.4, 316.6, 281.2, 270.8, 252.0],
+        grapeProb: [5.98, 5.98, 5.98, 5.98, 5.98, 5.83],
+        soloBbProb:   [389.5, 383.1, 371.5, 352.4, 340.0, 313.7],
+        cherryBbProb: [923.04, 936.23, 873.81, 873.81, 873.81, 819.20],
+        soloRbProb:   [523.8, 485.3, 440.1, 392.2, 385.2, 358.9],
+        cherryRbProb: [1424.70, 1285.02, 1149.75, 963.77, 923.04, 851.12],
       },
       funky: {
-        setting: [1,2,3,4,5,6],
-        bbProb: [266.4,259.0,256.0,249.2,240.1,219.1],
-        rbProb: [439.8,407.1,336.1,322.8,299.3,262.1],
-        grapeProb: [5.94,5.93,5.88,5.83,5.75,5.66],
-        soloBbProb: [405.0,397.0,395.0,383.0,375.0,334.0],
-        cherryBbProb:[1425.0,1365.0,1365.0,1365.0,1285.0,1260.0],
-        soloRbProb: [630.0,585.0,512.0,449.0,405.0,352.0],
-        cherryRbProb:[1456.0,1338.0,1285.0,1150.0,1150.0,1024.0],
+        setting: [1, 2, 3, 4, 5, 6],
+        bbProb: [266.4, 259.0, 256.0, 249.2, 240.1, 219.1],
+        rbProb: [439.8, 407.1, 336.1, 322.8, 299.3, 262.1],
+        grapeProb: [5.94, 5.93, 5.88, 5.83, 5.75, 5.66],
+        soloBbProb:   [405.0, 397.0, 395.0, 383.0, 375.0, 334.0],
+        cherryBbProb: [1425.0, 1365.0, 1365.0, 1365.0, 1285.0, 1260.0],
+        soloRbProb:   [630.0, 585.0, 512.0, 449.0, 405.0, 352.0],
+        cherryRbProb: [1456.0, 1338.0, 1285.0, 1150.0, 1150.0, 1024.0],
       },
     };
 
     // 事前分布
-    const prior = [0.22,0.43,0.22,0.09,0.03,0.01];
+    const prior = [0.22, 0.43, 0.22, 0.09, 0.03, 0.01];
 
     // --- 数学ユーティリティ ---
     function zScore(obs, expected, total){
@@ -193,7 +195,7 @@
         const weight=like*prior[i];
         rows.push({
           setting:m.setting[i],
-          bbZ,rbZ,gassanZ,grapeZ,
+          bbZ, rbZ, gassanZ, grapeZ,
           bbP:(100-percentileFromZ(bbZ)),
           rbP:(100-percentileFromZ(rbZ)),
           gassanP:(100-percentileFromZ(gassanZ)),
@@ -254,13 +256,18 @@
       return html;
     }
 
-    // 設定診断：zの言語化
-    function labelFromZ(z){
-      if (z>=1.0) return `引き強（+${fmt2(z)}σ）`;
-      if (z>=0.5) return `やや引き強（+${fmt2(z)}σ）`;
-      if (z>-0.5) return `平均域（${fmt2(z)}σ）`;
-      if (z>-1.0) return `やや引き弱（${fmt2(z)}σ）`;
-      return `引き弱（${fmt2(z)}σ）`;
+    // 片側p値→「上振れ/下振れX%」表現（合算Zベース）
+    function fluctuationLabelFromZ(z){
+      const phi = (z)=> percentileFromZ(z)/100; // CDF
+      let label, pct;
+      if (z>=0){
+        pct = (1 - phi(z))*100; // 右片側
+        label = `上振れ${fmt1(pct)}%`;
+      }else{
+        pct = (phi(z))*100;     // 左片側
+        label = `下振れ${fmt1(pct)}%`;
+      }
+      return label;
     }
 
     // 確信度（エントロピー／Gini）
@@ -269,11 +276,11 @@
       const H = -ps.reduce((s,p)=> s+(p>0?p*Math.log(p):0),0);
       const Hmax=Math.log(ps.length);
       const Hnorm= (Hmax===0)?0 : (1 - H/Hmax); // 0=不確実,1=確実
-      const gini=1-ps.reduce((s,p)=>s+p*p,0); // 0=確実, 最大=不確実
+      const gini=1-ps.reduce((s,p)=>s+p*p,0);    // 0=確実,高いほど不確実
       return {Hnorm, gini};
     }
 
-    // 棒グラフ描画（事後分布）
+    // 棒グラフ
     function renderPosteriorChart(canvas, rows){
       const ctx=canvas.getContext('2d');
       const w=canvas.width=canvas.clientWidth, h=canvas.height=240;
@@ -285,19 +292,15 @@
       const n=vals.length;
       const plotW=w-padding*2, plotH=h-padding*2;
       const barW=(plotW - barGap*(n-1))/n;
-
-      // axes
       ctx.strokeStyle='#999'; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(padding,h-padding); ctx.lineTo(w-padding,h-padding); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(padding,padding); ctx.lineTo(padding,h-padding); ctx.stroke();
-      // y ticks
       ctx.fillStyle='#666'; ctx.font='12px sans-serif';
       for (let y=0;y<=100;y+=25){
         const yy=h-padding - (y/maxVal)*plotH;
         ctx.fillText(`${y}%`, 4, yy+4);
         ctx.strokeStyle='#eee'; ctx.beginPath(); ctx.moveTo(padding,yy); ctx.lineTo(w-padding,yy); ctx.stroke();
       }
-      // bars
       for(let i=0;i<n;i++){
         const x=padding + i*(barW+barGap);
         const bh=(vals[i]/maxVal)*plotH;
@@ -310,37 +313,14 @@
       }
     }
 
-    // 言語化サマリー（上位K設定）
-    function verbalDiagnosis(key, rows, topK=3){
-      const sorted=[...rows].sort((a,b)=>b.percentage-a.percentage).slice(0,topK);
-      const lines=sorted.map(r=>{
-        const parts=[`設定${r.setting}仮定：`,
-          `BB ${labelFromZ(r.bbZ)}`,
-          `／RB ${labelFromZ(r.rbZ)}`,
-          `／合算 ${labelFromZ(r.gassanZ)}`];
-        if (r.cherryBbZ!=null) parts.push(`／Ch.BB ${labelFromZ(r.cherryBbZ)}`);
-        if (r.cherryRbZ!=null) parts.push(`／Ch.RB ${labelFromZ(r.cherryRbZ)}`);
-        return `・${parts.join(' ')}`;
+    // 自動診断（上位1～5、合算Zの片側p値で上/下振れを言語化）
+    function autoDiagnosis(rows){
+      const top = [...rows].sort((a,b)=>b.percentage-a.percentage).slice(0,5);
+      const lines = top.map(r=>{
+        const fl = fluctuationLabelFromZ(r.gassanZ); // 合算Zベース
+        return `・設定${r.setting}：${fl}（事後${fmt1(r.percentage)}%）`;
       });
-      // ヒューリスティック総評
-      const {Hnorm,gini}=certaintyMetrics(rows);
-      const top=sorted[0];
-      let stance;
-      if (top.percentage>=60 && Hnorm>=0.5) stance=`「設定${top.setting}最有力」`;
-      else if (top.percentage>=35) stance=`「設定${top.setting}優位だが競合あり」`;
-      else stance=`「複数設定が拮抗」`;
-
-      // 例示的な“設定4の引き強があり得る”検出（上位に4がいて合算z>0）
-      const s4=rows.find(r=>r.setting===4);
-      const s5=rows.find(r=>r.setting===5);
-      const hints=[];
-      if (s4 && s4.percentage>=15 && s4.gassanZ>0.3){ hints.push('設定4の引き強シナリオが射程'); }
-      if (s5 && Math.abs(s5.gassanZ)<0.4 && s5.percentage>=20){ hints.push('設定5の平均域挙動と整合'); }
-      const hintLine = hints.length ? `補足：${hints.join(' ／ ')}。` : '';
-
-      return {
-        text: `【総評】${stance}（確信度 H*=${fmt1(Hnorm*100)}%・Gini=${fmt2(gini)}）。\n${lines.join('\n')}\n${hintLine}`.trim()
-      };
+      return lines.join('\n');
     }
 
     // --- 画面更新 ---
@@ -364,38 +344,81 @@
 
       const {rows,sumHigh}=computeResult(key,g,bbTotal,rbTotal,grape,bbCherry,rbCherry);
 
-      // 表
+      // グラフ
       let html = '<div class="chart-wrap"><canvas id="postChart"></canvas></div>';
-      html += '<div class="summary diagnosis"><h3>自動診断（事後分布の言語化）</h3><pre id="diag" style="white-space:pre-wrap;"></pre></div>';
 
-      html += '<table class="result-table" border="1"><tr>'+
-              '<th>設定</th>'+
-              '<th>BB Z</th><th>BB%</th>'+
-              '<th>Cherry BB Z</th><th>Cherry BB%</th>'+
-              '<th>RB Z</th><th>RB%</th>'+
-              '<th>Cherry RB Z</th><th>Cherry RB%</th>'+
-              '<th>ボナ合算 Z<br><small>(BB+RB)</small></th>'+
-              '<th>ボナ合算%</th>'+
-              '<th>ブドウ Z</th><th>ブドウ%</th>'+
-              '<th>推定確率</th></tr>';
-      rows.forEach(r=>{
-        const chBBZ = r.cherryBbZ==null?'-':r.cherryBbZ.toFixed(2);
-        const chBBP = r.cherryBbP==null?'-':`${fmt2(r.cherryBbP)}%`;
-        const chRBZ = r.cherryRbZ==null?'-':r.cherryRbZ.toFixed(2);
-        const chRBP = r.cherryRbP==null?'-':`${fmt2(r.cherryRbP)}%`;
-        html += `<tr>
-          <td>${r.setting}</td>
-          <td>${r.bbZ.toFixed(2)}</td><td>${fmt2(r.bbP)}%</td>
-          <td>${chBBZ}</td><td>${chBBP}</td>
-          <td>${r.rbZ.toFixed(2)}</td><td>${fmt2(r.rbP)}%</td>
-          <td>${chRBZ}</td><td>${chRBP}</td>
-          <td>${r.gassanZ.toFixed(2)}</td><td>${fmt2(r.gassanP)}%</td>
-          <td>${r.grapeP===null?'-':r.grapeZ.toFixed(2)}</td>
-          <td>${r.grapeP===null?'-':fmt2(r.grapeP)+'%'}</td>
-          <td>${(r.percentage).toFixed(1)}%</td>
-        </tr>`;
-      });
-      html += '</table>';
+      // 自動診断（上位5）
+      html += `
+        <div class="summary">
+          <h3>自動診断（上位1～5：合算Zの上/下振れ%で表示）</h3>
+          <pre id="diag"></pre>
+        </div>
+      `;
+
+      // --- Zスコア出力を3ブロックに分割（縦積み） ---
+      // 1) BBブロック
+      html += `
+        <div class="block-title">BB関連（合算BB・チェリーBB）</div>
+        <table class="result-table">
+          <tr>
+            <th>設定</th>
+            <th>BB Z</th><th>BB%</th>
+            <th>Cherry BB Z</th><th>Cherry BB%</th>
+          </tr>
+          ${rows.map(r=>{
+            const chBBZ = r.cherryBbZ==null?'-':r.cherryBbZ.toFixed(2);
+            const chBBP = r.cherryBbP==null?'-':`${fmt2(r.cherryBbP)}%`;
+            return `<tr>
+              <td>${r.setting}</td>
+              <td>${r.bbZ.toFixed(2)}</td><td>${fmt2(r.bbP)}%</td>
+              <td>${chBBZ}</td><td>${chBBP}</td>
+            </tr>`;
+          }).join('')}
+        </table>
+      `;
+
+      // 2) RBブロック
+      html += `
+        <div class="block-title">RB関連（合算RB・チェリーRB）</div>
+        <table class="result-table">
+          <tr>
+            <th>設定</th>
+            <th>RB Z</th><th>RB%</th>
+            <th>Cherry RB Z</th><th>Cherry RB%</th>
+          </tr>
+          ${rows.map(r=>{
+            const chRBZ = r.cherryRbZ==null?'-':r.cherryRbZ.toFixed(2);
+            const chRBP = r.cherryRbP==null?'-':`${fmt2(r.cherryRbP)}%`;
+            return `<tr>
+              <td>${r.setting}</td>
+              <td>${r.rbZ.toFixed(2)}</td><td>${fmt2(r.rbP)}%</td>
+              <td>${chRBZ}</td><td>${chRBP}</td>
+            </tr>`;
+          }).join('')}
+        </table>
+      `;
+
+      // 3) ボナ合算以降ブロック
+      html += `
+        <div class="block-title">ボナ合算・ブドウ・推定確率</div>
+        <table class="result-table">
+          <tr>
+            <th>設定</th>
+            <th>ボナ合算 Z</th><th>ボナ合算%</th>
+            <th>ブドウ Z</th><th>ブドウ%</th>
+            <th>推定確率</th>
+          </tr>
+          ${rows.map(r=>{
+            return `<tr>
+              <td>${r.setting}</td>
+              <td>${r.gassanZ.toFixed(2)}</td><td>${fmt2(r.gassanP)}%</td>
+              <td>${r.grapeP===null?'-':r.grapeZ.toFixed(2)}</td>
+              <td>${r.grapeP===null?'-':fmt2(r.grapeP)+'%'}</td>
+              <td>${(r.percentage).toFixed(1)}%</td>
+            </tr>`;
+          }).join('')}
+        </table>
+      `;
 
       // 高設定合算まとめ（RB 300/600）
       const hiLabel=(key==='aim'||key==='gojugg3')?'（設定5・6）':'（設定4～6）';
@@ -436,23 +459,30 @@
           </table>
         </div>`;
 
-      // 重み注記
+      // 評価重みの注記 ＋（この下に）確信度の具体値
       const note = (key==='myjugg5')?'重み：BB10% / RB50% / ボナ合算40%（ブドウ0%）'
                 : (key==='gojugg3')?'重み：BB10% / RB45% / ボナ合算45%（ブドウ0%）'
                 : (key==='aim')    ?'重み：BB5% / RB55% / ボナ合算40%（ブドウ0%）'
                 : '重み：従来ロジック（ブドウ入力時は最大15%、回転数でRBと合算比率が可変）';
-      html += `<div class="summary"><h3>評価重みの注記</h3><p>${note}</p></div>`;
+      const {Hnorm,gini}=certaintyMetrics(rows);
+      html += `
+        <div class="summary">
+          <h3>評価重みの注記</h3>
+          <p>${note}</p>
+          <div class="note">
+            確信度の指標：正規化エントロピー H* = <strong>${fmt1(Hnorm*100)}%</strong>、Gini = <strong>${fmt2(gini)}</strong>
+          </div>
+        </div>`;
 
-      // 内訳
+      // 内訳表
       html += renderBreakdownTable(key);
 
       document.getElementById('output').innerHTML=html;
 
-      // グラフ描画と診断テキスト
+      // グラフ描画＋診断テキスト
       const canvas=document.getElementById('postChart');
       renderPosteriorChart(canvas, rows);
-      const diag=verbalDiagnosis(key, rows, 3);
-      document.getElementById('diag').textContent = diag.text;
+      document.getElementById('diag').textContent = autoDiagnosis(rows);
 
       function valOrNull(id){
         const v=document.getElementById(id).value;
